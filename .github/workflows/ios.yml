@@ -58,8 +58,13 @@ jobs:
   ios-sim:
     runs-on: macos-15
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        ios_major: ["18", "26"]
     env:
       BUNDLE_ID: com.example.openpilotphone
+      IOS_MAJOR: ${{ matrix.ios_major }}
     steps:
       - uses: actions/checkout@v4
 
@@ -134,7 +139,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ios-sim-logs
+          name: ios-sim-logs-ios${{ matrix.ios_major }}
           path: artifacts/
 
       - name: Require SELFTEST PASS
