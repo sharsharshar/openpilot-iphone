@@ -7,6 +7,7 @@ on:
       - 'experiments/aneforge/**'
       - 'experiments/big_model/**'
       - 'experiments/gelu_sensitivity/**'
+      - 'experiments/weight_compression/**'
       - '.github/workflows/aneforge.yml'
       - '.github/workflows/tinygrad-metal.yml'
       - '.github/workflows/ane-probe.yml'
