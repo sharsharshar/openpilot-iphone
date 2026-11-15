@@ -158,6 +158,28 @@ jobs:
           echo "----- console_live.log -----"
           cat artifacts/console_live.log
 
+      # Experiment, never gates the job: drive the Neural Engine through private classes (see experiments/ane_probe).
+      # The simulator has no Neural Engine, so this mostly records what the classes report there.
+      - name: Launch with -aneprobe
+        continue-on-error: true
+        run: |
+          set +e
+          : > artifacts/console_aneprobe.log
+          xcrun simctl launch --console "$UDID" "$BUNDLE_ID" -aneprobe > artifacts/console_aneprobe.log 2>&1 &
+          PROBE_PID=$!
+          for i in $(seq 1 36); do
+            if grep -q "ANEPROBE DONE" artifacts/console_aneprobe.log; then break; fi
+            sleep 5
+          done
+          sleep 2
+          CONTAINER=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data || true)
+          cp "$CONTAINER/Documents/aneprobe.txt" artifacts/aneprobe.txt || echo "no aneprobe.txt found"
+          xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+          kill "$PROBE_PID" 2>/dev/null || true
+          echo "----- console_aneprobe.log -----"
+          cat artifacts/console_aneprobe.log
+          exit 0
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

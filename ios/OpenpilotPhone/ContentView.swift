@@ -47,6 +47,18 @@ struct ContentView: View {
                         .font(.system(size: 10, design: .monospaced))
                         .textSelection(.enabled)
                 }
+
+                Button("Run ANE probe") {
+                    pipeline.runANEProbe()
+                }
+                .buttonStyle(.bordered)
+                .disabled(pipeline.aneProbeRunning)
+
+                if !pipeline.aneProbeText.isEmpty {
+                    Text(pipeline.aneProbeText)
+                        .font(.system(size: 10, design: .monospaced))
+                        .textSelection(.enabled)
+                }
             }
             .padding(16)
         }

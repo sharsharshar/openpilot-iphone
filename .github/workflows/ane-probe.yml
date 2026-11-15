@@ -1,0 +1,86 @@
+name: ane-probe
+
+# Experiment: drive the Apple Neural Engine through private AppleNeuralEngine.framework classes.
+# The hosted macOS runners are virtual machines that very likely have no Neural Engine, so every ANE
+# stage may fail; the job still succeeds and the uploaded output is the result.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "experiments/ane_probe/**"
+      - ".github/workflows/ane-probe.yml"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  probe:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python packages
+        run: python -m pip install coremltools numpy
+
+      - name: Build tiny models
+        run: |
+          set +e
+          mkdir -p out work/pkgs work/compiled
+          python experiments/ane_probe/make_tiny_model.py work/pkgs 2>&1 | tee out/make_tiny_model.txt
+          ls -la work/pkgs
+          exit 0
+
+      - name: Compile models with coremlcompiler
+        run: |
+          set +e
+          for pkg in work/pkgs/tiny_conv.mlpackage work/pkgs/tiny_gelu.mlpackage coreml/driving_supercombo.mlpackage; do
+            echo "=== compile $pkg"
+            xcrun coremlcompiler compile "$pkg" work/compiled 2>&1 | tail -n 20
+          done
+          {
+            echo "=== xcodebuild -version"; xcodebuild -version
+            echo "=== compiled files"; find work/compiled -type f -exec ls -la {} \;
+          } 2>&1 | tee out/compiled_listing.txt
+          for m in tiny_conv tiny_gelu; do
+            cp "work/compiled/$m.mlmodelc/model.mil" "out/$m.model.mil" 2>/dev/null
+          done
+          exit 0
+
+      - name: Build the probe
+        run: |
+          set -o pipefail
+          clang -fobjc-arc -O1 -Wall -Wno-unused-function \
+            -framework Foundation -framework IOSurface -framework CoreML \
+            experiments/ane_probe/main.m experiments/ane_probe/ane_probe.m \
+            -o work/ane_probe 2>&1 | tee out/build.txt
+
+      - name: Run the probe
+        run: |
+          set +e
+          : > out/probe.txt
+          sw_vers 2>&1 | tee -a out/probe.txt
+          sysctl machdep.cpu.brand_string hw.model hw.machine 2>&1 | tee -a out/probe.txt
+          for m in tiny_conv tiny_gelu driving_supercombo; do
+            echo "##### $m" | tee -a out/probe.txt
+            # macOS has no timeout(1): SIGALRM after 300 s kills the probe (shell status 142).
+            perl -e 'alarm shift; exec @ARGV' 300 work/ane_probe "work/compiled/$m.mlmodelc" 2>&1 | tee -a out/probe.txt
+            echo "ANEPROBE-CI exit=${PIPESTATUS[0]} model=$m" | tee -a out/probe.txt
+          done
+          {
+            echo '### ANE probe results'
+            echo '```'
+            grep -h -E "ANEPROBE (DONE|env: class|env: \+\[_ANEDeviceInfo (hasANE|isVirtualMachine))|ANEPROBE-CI" out/probe.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ane-probe
+          path: out/

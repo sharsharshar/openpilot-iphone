@@ -21,6 +21,13 @@ targets:
       - path: ../core/opcore.h
         group: core
         buildPhase: none
+      # ANE probe experiment (private AppleNeuralEngine.framework classes, research only; never for the App Store).
+      - path: ../experiments/ane_probe/ane_probe.m
+        group: ane_probe
+        compilerFlags: ["-fobjc-arc"]
+      - path: ../experiments/ane_probe/ane_probe.h
+        group: ane_probe
+        buildPhase: none
       - path: ../coreml/driving_supercombo.mlpackage
         group: coreml
         type: file
@@ -32,6 +39,8 @@ targets:
       - path: ../fixtures/outputs_f32.bin
         group: fixtures
         buildPhase: resources
+    dependencies:
+      - sdk: IOSurface.framework
     info:
       path: Generated/Info.plist
       properties:
@@ -48,7 +57,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_OBJC_BRIDGING_HEADER: OpenpilotPhone/OpenpilotPhone-Bridging-Header.h
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/../core"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../core $(SRCROOT)/../experiments/ane_probe"
+        CLANG_ENABLE_OBJC_ARC: YES
         GCC_C_LANGUAGE_STANDARD: c99
         # We load the model with the generic MLModel API, so skip Xcode's generated model class.
         COREML_CODEGEN_LANGUAGE: None

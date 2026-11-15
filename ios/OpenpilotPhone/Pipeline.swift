@@ -49,6 +49,8 @@ final class Pipeline: ObservableObject {
     @Published var computeChoice: ComputeChoice = .all
     @Published var selfTestText: String = ""
     @Published var selfTestRunning: Bool = false
+    @Published var aneProbeText: String = ""
+    @Published var aneProbeRunning: Bool = false
 
     private let processQueue = DispatchQueue(label: "pipeline.process", qos: .userInitiated)
     private let lock = NSLock()
@@ -76,6 +78,11 @@ final class Pipeline: ObservableObject {
         if launched { return }
         launched = true
         let args = CommandLine.arguments
+        if args.contains("-aneprobe") {
+            // ANE probe only: no camera, no model pipeline.
+            runANEProbe()
+            return
+        }
         if args.contains("-selftest") {
             // CPU only by default: deterministic, and CI VMs may have no usable GPU.
             var units = MLComputeUnits.cpuOnly
@@ -176,6 +183,20 @@ final class Pipeline: ObservableObject {
                 self.selfTestText = result.text
                 self.selfTestRunning = false
                 if restart && wasRunning { self.start() }
+            }
+        }
+    }
+
+    func runANEProbe() {
+        if aneProbeRunning { return }
+        aneProbeRunning = true
+        aneProbeText = "running..."
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let text = ANEProbeRunner.run()
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.aneProbeText = text
+                self.aneProbeRunning = false
             }
         }
     }
