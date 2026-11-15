@@ -7,9 +7,14 @@ import sys, struct, pickletools, collections, os
 def main(path):
   size = os.path.getsize(path)
   with open(path, 'rb') as f:
-    n = struct.unpack('<q', f.read(8))[0]
-    ops = f.read(n)
-  print(f"file bytes {size}; opcode stream bytes {n}; out-of-band buffer region bytes {size-8-n}")
+    head = f.read(10); f.seek(0)
+    n0 = struct.unpack('<q', head[:8])[0]
+    if 0 < n0 < size and head[8] == 0x80:   # out-of-band container: <q len> + protocol-N opcodes + raw buffers
+      f.read(8); n = n0; ops = f.read(n)
+      print(f"file bytes {size}; out-of-band container; opcode stream bytes {n}; raw buffer region bytes {size-8-n}")
+    else:                                   # plain pickle (the warp pickles)
+      ops = f.read(); n = len(ops)
+      print(f"file bytes {size}; plain pickle (no out-of-band region); opcode stream bytes {n}")
   memo, strs, globs = {}, [], collections.Counter()
   perm = collections.Counter(); persids = 0; pid_sizes = []; nstr = collections.Counter()
   opcount = collections.Counter(); last_pid = None
@@ -43,9 +48,11 @@ def main(path):
   print("\nopcode counts:", dict(opcount.most_common(12)))
   devs = {s: c for s, c in nstr.items() if any(k in s for k in ('AMD', 'USB', 'CPU', 'QCOM', 'METAL', 'LLVM', 'CLANG', 'GPU', 'NPY', 'DISK'))}
   print("\ndevice-like strings:", devs)
-  prog = sorted(s for s in nstr if s.startswith(('E_', 'r_', 'R_', 'cast', 'copy')) )
-  print(f"\nkernel-name-like strings: {len(prog)} distinct")
-  for s in prog: print(f"  {s} x{nstr[s]}")
+  import re
+  ansi = re.compile(r'\x1b\[[0-9;]*m')
+  prog = sorted({ansi.sub('', s) for s in nstr if ansi.search(s) and s[:2] in ('E\x1b', 'r\x1b', 'R\x1b')})
+  print(f"\nkernel-name strings (ANSI colour codes stripped), distinct: {len(prog)}")
+  print("  (the same name can be reused by several launches; per-launch list is in analyze_pkl.py)")
   if '--strings' in sys.argv:
     for s, c in nstr.items(): print(repr(s[:100]), c)
 

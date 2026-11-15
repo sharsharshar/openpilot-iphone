@@ -97,3 +97,18 @@ Edited graph through ANEForge on Linux (observed):
 - Numerical agreement of ANEForge's fp16 output with the reference: needs hardware.
 - Next-state outputs and the uint8 queue bookkeeping: no ANEForge path found (Slice step 4 is rejected; only one output per import).
 - Behaviour of `ANEFORGE_TARGET` auto-detection on the runner (`detect_family` reads the CPU brand string).
+
+## macOS runner result (GitHub `macos-15`, Apple Silicon VM, no Neural Engine)
+
+Run on commit c4865b0, ANEForge 34c18a7.
+
+- ANEForge's native library built without changes.
+- Import and static preflight reproduced the Linux results exactly (540 native, 0 rejected, 0 oversize for A13, A15, A16).
+- `cross_compile_check(..., "h16s")` returned False in 0.3 s for the full trimmed model AND for a 31-op
+  convolution-only stem. A failure on a plain conv stem that fast points at the host, not at the model.
+- `af.compile(..., target="h16s")` failed for both with `ane_e5rt_program_compile failed (... mask=0x4)`.
+  The underlying Espresso error text was not captured.
+
+So on a GitHub VM neither private route compiles for the Neural Engine: the `_ANEInMemoryModel` route says
+"Host too old, ANE hardware not available", and ANEForge's e5rt route fails at program compile. The claim in
+ANEForge's docs that cross-compilation needs no device was not reproduced here; it may hold on a physical Mac.
