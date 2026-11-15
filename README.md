@@ -26,6 +26,17 @@ Verified on GitHub's hosted Macs (see the Actions tab):
 Not verified anywhere yet: a real iPhone, the camera path (frame rate, intrinsics, orientation), the warp on
 real camera frames, and anything on the Neural Engine or GPU.
 
+## Experiments
+
+- `experiments/ane_probe/`: drives the Neural Engine through Apple's private classes, bypassing Core ML. Also built
+  into the app ("Run ANE probe" button, or the `-aneprobe` launch flag). Results so far: on a GitHub Mac (a virtual
+  machine) the classes exist but the ANE compiler refuses to start ("Host too old, ANE hardware not available");
+  in the iOS simulators the framework does not exist at all. It has not yet run on a real iPhone, which is the
+  only place it can give an answer. Private API: for your own device only, never the App Store.
+- `experiments/tinygrad_metal/`: the driving model through tinygrad (see `RESULTS.md`). On a GitHub Mac's virtual
+  GPU via Metal: matches the reference, 161 kernel launches per inference from 78 distinct kernels, 51 ms per run
+  with the time spread evenly across kernels. Timings on a virtual GPU do not predict a phone.
+
 ## Simulator caveat
 
 The simulator has no Neural Engine and no camera. It runs the model on the Mac CPU (and maybe GPU)
