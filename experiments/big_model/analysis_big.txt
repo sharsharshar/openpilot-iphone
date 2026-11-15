@@ -1,0 +1,59 @@
+keys: ['metadata', 'run', 'input_specs', 'output_specs']
+input_specs
+  new_img                (2, 6, 128, 256)       uint8    AMD
+  desire                 (8,)                   float32  AMD
+  traffic_convention     (1, 2)                 float32  AMD
+  action_t               (1, 2)                 float32  AMD
+  state_img_q            (2, 5, 6, 128, 256)    uint8    AMD
+  state_desire_q         (132, 1, 8)            float32  AMD
+  state_feat_q           (128, 1, 16384)        float32  AMD
+output_specs
+  outputs                (1, 18452)             float32  AMD
+  next_state_img_q       (2, 5, 6, 128, 256)    uint8    AMD
+  next_state_desire_q    (132, 1, 8)            float32  AMD
+  next_state_feat_q      (128, 1, 16384)        float32  AMD
+metadata keys: ['output_slices', 'model_checkpoint'] | model_checkpoint: f22e06e5-3b3f-48d2-a6b9-2f32dc20e707/56320/ea2f516f-f758-42be-a245-913bb818a64f
+output_slices:
+  lane_lines                   0:528  (528)
+  lane_lines_prob              528:536  (8)
+  road_edges                   536:800  (264)
+  meta                         800:855  (55)
+  desire_pred                  855:887  (32)
+  pose                         887:899  (12)
+  wide_from_device_euler       899:905  (6)
+  road_transform               905:917  (12)
+  plan                         917:1907  (990)
+  lead                         1907:2051  (144)
+  lead_prob                    2051:2054  (3)
+  desire_state                 2054:2062  (8)
+  action                       2062:2066  (4)
+  hidden_state                 2066:18450  (16384)
+  pad                          18450:18452  (2)
+uops: 6172 {'CONST': 3214, 'GETADDR': 1176, 'BUFFER': 593, 'SHRINK': 476, 'BITCAST': 140, 'ALLOC': 110, 'STORE': 105, 'BINARY': 87}
+persistent-id buffers: 593 total bytes 766473168
+BUFFER uops (= out-of-band buffers) by dtype: count, elements, bytes
+  dtypes.f16       584      382904772      765809544
+  dtypes.i64         1              9             72
+  dtypes.bool        8         663552         663552
+HCQInfo device: ('AMD',) | kernel launches: 474 | estimates: Estimates(ops=96233854572, lds=7057221020, mem=1216140348)
+sum of per-kernel estimates: ops 96233854572 lds 7057221020 mem 1216140348
+distinct kernel names: 56
+by prefix (E=elementwise, r=reduce/matmul/conv): {'E': 92, 'r': 382}
+ops by prefix: {'E': 57664440, 'r': 96176190132}
+top 15 launches by ops:
+     1.130 Gop  mem      5.77 MB  r_32_4_4_32_2_2_2_4_4_16
+     1.130 Gop  mem      5.77 MB  r_32_4_4_32_2_2_2_4_4_16
+     1.130 Gop  mem      5.77 MB  r_32_4_4_32_2_2_2_4_4_16
+     1.108 Gop  mem      5.24 MB  r_8_8_4_32_2_2_2_4_128
+     1.108 Gop  mem      5.24 MB  r_8_8_4_32_2_2_2_4_128
+     1.108 Gop  mem      5.77 MB  r_8_8_4_32_2_2_2_4_128
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+     1.108 Gop  mem      9.97 MB  r_16_2_4_32_2_2_2_4_256
+ops in top 10/50 launches: 0.11582307271772782 0.573794650100883

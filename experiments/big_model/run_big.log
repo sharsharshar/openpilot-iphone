@@ -1,0 +1,118 @@
+Traceback (most recent call last):
+  File "/home/user/openpilot-iphone/experiments/big_model/run_big.py", line 25, in <module>
+    j['run'](output_buffers=outs, **ins); print("RAN", outs['outputs'].numpy()[:5])
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/tmp/claude-0/-home-user-openpilot-iphone/a1fb14e4-d812-5f0d-91cc-99ad365eb7b8/scratchpad/big/tg/tinygrad/engine/jit.py", line 172, in __call__
+    raise JitError(f"args mismatch in JIT: {self.captured.expected_input_info=} != {expected_input_info=}")
+tinygrad.engine.jit.JitError: args mismatch in JIT: self.captured.expected_input_info=[(UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=2, src=()),)),)), (), dtypes.f32, 'AMD'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.f32, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=2, src=()),
+    UOp(Ops.CONST, arg=6, src=()),
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=256, src=()),)),)), (), dtypes.u8, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=132, src=()),
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=8, src=()),)),)), (), dtypes.f32, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=16384, src=()),)),)), (), dtypes.f32, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=2, src=()),
+    UOp(Ops.CONST, arg=5, src=()),
+    UOp(Ops.CONST, arg=6, src=()),
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=256, src=()),)),)), (), dtypes.u8, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=2, src=()),)),)), (), dtypes.f32, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=18452, src=()),)),)), (), dtypes.f32, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=2, src=()),
+    UOp(Ops.CONST, arg=5, src=()),
+    UOp(Ops.CONST, arg=6, src=()),
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=256, src=()),)),)), (), dtypes.u8, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=132, src=()),
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=8, src=()),)),)), (), dtypes.f32, 'AMD'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=16384, src=()),)),)), (), dtypes.f32, 'AMD')] != expected_input_info=[(UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=2, src=()),)),)), (), dtypes.f32, 'CPU'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.f32, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=2, src=()),
+    UOp(Ops.CONST, arg=6, src=()),
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=256, src=()),)),)), (), dtypes.u8, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=132, src=()),
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=8, src=()),)),)), (), dtypes.f32, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=16384, src=()),)),)), (), dtypes.f32, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=2, src=()),
+    UOp(Ops.CONST, arg=5, src=()),
+    UOp(Ops.CONST, arg=6, src=()),
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=256, src=()),)),)), (), dtypes.u8, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=2, src=()),)),)), (), dtypes.f32, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=18452, src=()),)),)), (), dtypes.f32, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=2, src=()),
+    UOp(Ops.CONST, arg=5, src=()),
+    UOp(Ops.CONST, arg=6, src=()),
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=256, src=()),)),)), (), dtypes.u8, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=132, src=()),
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=8, src=()),)),)), (), dtypes.f32, 'CPU'), (UOp(Ops.RESHAPE, arg=None, src=(
+  UOp(Ops.NOOP, arg=None, src=()),
+  UOp(Ops.STACK, arg=None, src=(
+    UOp(Ops.CONST, arg=128, src=()),
+    UOp(Ops.CONST, arg=1, src=()),
+    UOp(Ops.CONST, arg=16384, src=()),)),)), (), dtypes.f32, 'CPU')]
+Device.DEFAULT = CPU
+weights copied to CPU peak RSS MB 1514
+unpickled OK; input_specs devices: {'AMD'}
+lower_and_compile OK

@@ -1,0 +1,27 @@
+file bytes 767228907; out-of-band container; opcode stream bytes 747231; raw buffer region bytes 766481668
+persistent-id references (out-of-band buffer views): 593
+
+referenced globals (module, name): count
+  tinygrad.device.BufferSpec: 1
+  tinygrad.dtype.AddrSpace: 1
+  tinygrad.dtype.DType: 1
+  tinygrad.engine.jit.CapturedJit: 1
+  tinygrad.engine.jit._TinyJit: 1
+  tinygrad.helpers.Target: 1
+  tinygrad.renderer.Estimates: 1
+  tinygrad.runtime.support.hcq2.HCQInfo: 1
+  tinygrad.uop.Ops: 1
+  tinygrad.uop.ops.AxisType: 1
+  tinygrad.uop.ops.CallInfo: 1
+  tinygrad.uop.ops.CustomFunction: 1
+  tinygrad.uop.ops.KernelInfo: 1
+  tinygrad.uop.ops.ParamArg: 1
+  tinygrad.uop.ops.ProgramInfo: 1
+  tinygrad.uop.ops.UOp: 1
+
+opcode counts: {'BINGET': 23850, 'MEMOIZE': 22397, 'LONG_BINGET': 13735, 'TUPLE3': 7767, 'REDUCE': 7264, 'NONE': 5549, 'EMPTY_TUPLE': 5251, 'BININT2': 4106, 'TUPLE1': 2551, 'TUPLE2': 1880, 'NEWFALSE': 1688, 'MARK': 1564}
+
+device-like strings: {'CPU': 3, 'LLVM': 1, 'AMD': 2}
+
+kernel-name strings (ANSI colour codes stripped), distinct: 56
+  (the same name can be reused by several launches; per-launch list is in analyze_pkl.py)

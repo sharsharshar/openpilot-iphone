@@ -6,6 +6,7 @@ on:
       - 'experiments/tinygrad_metal/**'
       - 'experiments/aneforge/**'
       - 'experiments/big_model/**'
+      - 'experiments/gelu_sensitivity/**'
       - '.github/workflows/aneforge.yml'
       - '.github/workflows/tinygrad-metal.yml'
       - '.github/workflows/ane-probe.yml'
