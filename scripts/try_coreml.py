@@ -21,7 +21,11 @@ inputs = [ct.TensorType(name=n, shape=tuple(e.shape), dtype=(np.float32 if e.dty
           for n, e in zip(names, ex)]
 try:
     out_names = ["outputs", "next_state_img_q", "next_state_desire_q", "next_state_feat_q"]
-    ml = ct.convert(traced, inputs=inputs, outputs=[ct.TensorType(name=n) for n in out_names], convert_to="mlprogram", minimum_deployment_target=ct.target.iOS18,
+    import os
+    pipeline = ct.PassPipeline.DEFAULT
+    if os.environ.get("GELU_EXPLICIT") == "1":   # stop coremltools from recognising the formula and fusing it back into a gelu op
+        pipeline.remove_passes({"common::fuse_gelu_tanh_approximation", "common::fuse_gelu_exact"})
+    ml = ct.convert(traced, inputs=inputs, outputs=[ct.TensorType(name=n) for n in out_names], pass_pipeline=pipeline, convert_to="mlprogram", minimum_deployment_target=ct.target.iOS18,
                     compute_precision=ct.precision.FLOAT16)
     ml.save(sys.argv[2]); print("coremltools convert: OK ->", sys.argv[2])
     spec = ml.get_spec()

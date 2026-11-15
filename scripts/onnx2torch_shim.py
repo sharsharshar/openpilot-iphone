@@ -9,9 +9,17 @@ from onnx2torch.utils.common import OnnxToTorchModule, OperationConverterResult,
 for op, new, old in [("Cast", 19, 13), ("Identity", 19, 16)]:
     REG[OperationDescription(domain="", operation_type=op, version=new)] = REG[OperationDescription(domain="", operation_type=op, version=old)]
 
+class GeluTanhExplicit(nn.Module, OnnxToTorchModule):
+    """The tanh GELU formula written out in basic operations, so a converter cannot swap in its own GELU."""
+    def forward(self, x):
+        return 0.5 * x * (1.0 + torch.tanh(0.7978845608028654 * (x + 0.044715 * (x * x * x))))
+
 @add_converter(operation_type="Gelu", version=20)
 def _gelu(node, graph):
-    return OperationConverterResult(torch_module=nn.GELU(approximate=node.attributes.get("approximate", "none")),
+    import os
+    approx = node.attributes.get("approximate", "none")
+    explicit = os.environ.get("GELU_EXPLICIT") == "1" and approx == "tanh"
+    return OperationConverterResult(torch_module=GeluTanhExplicit() if explicit else nn.GELU(approximate=approx),
                                     onnx_mapping=onnx_mapping_from_node(node))
 
 class Reduce(nn.Module, OnnxToTorchModule):
