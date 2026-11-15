@@ -12,6 +12,20 @@ view of the predicted path, lane lines and road edges, with timing numbers.
 - `.github/workflows/ios.yml` builds the app in an iPhone simulator and runs a self-test
   (`-selftest` launch argument: replays the fixtures and compares against the expected outputs).
 
+## Status
+
+Verified on GitHub's hosted Macs (see the Actions tab):
+
+- The Core ML package matches the reference outputs on macOS 15 (40 steps, worst difference 2.39, mean 0.017).
+- The app builds with Xcode 16.4 and runs in an iPhone simulator. On iOS 18.6 the self-test passes and the
+  live path (model with state, C output parsing, plot) produces the expected curvature and acceleration.
+- **Known open issue:** on the iOS 26.2 simulator the same model gives systematically different numbers
+  (worst difference 5.9, mean 0.057, far end of the plan consistently low) and the self-test fails. The cause
+  is not known. The CI job for iOS 26 reports this without failing the workflow.
+
+Not verified anywhere yet: a real iPhone, the camera path (frame rate, intrinsics, orientation), the warp on
+real camera frames, and anything on the Neural Engine or GPU.
+
 ## Simulator caveat
 
 The simulator has no Neural Engine and no camera. It runs the model on the Mac CPU (and maybe GPU)
