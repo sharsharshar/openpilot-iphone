@@ -4,6 +4,9 @@ on:
   push:
     paths-ignore:
       - 'experiments/tinygrad_metal/**'
+      - 'experiments/aneforge/**'
+      - 'experiments/big_model/**'
+      - '.github/workflows/aneforge.yml'
       - '.github/workflows/tinygrad-metal.yml'
       - '.github/workflows/ane-probe.yml'
   workflow_dispatch:
