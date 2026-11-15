@@ -60,6 +60,7 @@ final class Pipeline: ObservableObject {
     private var runner: ModelRunner?
     private var prev = op_result_t()
     private var havePrev = false
+    private var liveCount = 0
     private var lastDone: Double = 0
     private var fpsEMA: Double = 0
 
@@ -228,6 +229,11 @@ final class Pipeline: ObservableObject {
             prev = out
             havePrev = true
             let disp = Pipeline.makeDisplay(&out)
+            liveCount += 1
+            if liveCount % 20 == 0 {
+                NSLog("LIVE frames %ld ms %.1f curvature %.6f accel %.4f lead_prob %.3f",
+                      liveCount, r.ms, Double(out.desired_curvature), Double(out.desired_accel), Double(out.lead_prob))
+            }
 
             let now = ProcessInfo.processInfo.systemUptime
             if lastDone > 0 {
