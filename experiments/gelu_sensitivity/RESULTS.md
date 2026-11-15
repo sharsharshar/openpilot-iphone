@@ -21,3 +21,18 @@ For scale: float16 rounding alone gives worst 1.71, mean 0.010; Core ML on macOS
 Core ML on the iOS 26.2 simulator gives worst 5.9, mean 0.057.
 
 Caveats: the reference frames are synthetic, not road footage. The piecewise-linear knots are uniform, not optimised.
+
+## Is Core ML's built-in GELU the cause of the iOS 26 offset? No.
+
+Branch `exp/gelu-explicit` carries a Core ML package converted with `GELU_EXPLICIT=1` (each GELU written out as
+mul/add/tanh; the package has 0 `gelu` ops and 20 `tanh` ops). The app's normal CI ran against it (run 43692148001).
+
+| Where | Built-in GELU (main): worst / mean | GELU written out: worst / mean | Self-test, written out |
+|---|---|---|---|
+| macOS 15, Python | 2.39 / 0.0174 | 2.98 / 0.0163 | n/a |
+| iOS 18.6 simulator | 2.39 / 0.0175 | 2.98 / 0.0164 | FAIL (one step's mean was 0.056, limit 0.05) |
+| iOS 26.2 simulator | 5.90 / 0.0569 | 6.41 / 0.0549 | FAIL |
+
+Writing GELU out changes nothing material on iOS 26, so the offset there does not come from Core ML's GELU.
+On iOS 18 the written-out form is about as accurate overall but trips the per-step limit once, so `main` keeps
+the built-in GELU.
