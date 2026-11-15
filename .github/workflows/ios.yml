@@ -9,18 +9,16 @@ defaults:
     shell: bash
 
 jobs:
-  core-tests:
+  # The full core test suite (core/run_tests.sh) needs the original ONNX model, which is too large to commit,
+  # so CI only checks that the C core builds cleanly. Run the full suite locally.
+  core-compile:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - name: Run core tests if present
+      - name: Compile the C core with warnings as errors
         run: |
-          if [ -f core/run_tests.sh ]; then
-            bash core/run_tests.sh
-          else
-            echo "core/run_tests.sh not found, skipping"
-          fi
+          cc -std=c99 -O2 -Wall -Wextra -Werror -c core/opcore.c -o /tmp/opcore_gcc.o
+          clang -std=c99 -O2 -Wall -Wextra -Werror -c core/opcore.c -o /tmp/opcore_clang.o
 
   coreml-verify:
     runs-on: macos-15

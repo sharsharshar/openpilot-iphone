@@ -25,9 +25,12 @@ targets:
         group: coreml
         type: file
         buildPhase: sources
-      - path: ../fixtures
+      # Listed one by one: a directory source outside the project folder resolved to the wrong path in CI.
+      - path: ../fixtures/frames_u8.bin
         group: fixtures
-        includes: ["*.bin"]
+        buildPhase: resources
+      - path: ../fixtures/outputs_f32.bin
+        group: fixtures
         buildPhase: resources
     info:
       path: Generated/Info.plist
