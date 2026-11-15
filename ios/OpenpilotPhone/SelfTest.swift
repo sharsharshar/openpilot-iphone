@@ -47,6 +47,14 @@ struct Fixtures {
         return out
     }
 
+    /// Calls `body` with a pointer to frame `i` as uint8 (Dims.inputLen bytes), straight from the fixture data.
+    func withFrameBytes(_ i: Int, _ body: (UnsafePointer<UInt8>) -> Void) {
+        frames.withUnsafeBytes { raw in
+            let p = raw.bindMemory(to: UInt8.self)
+            body(p.baseAddress! + i * Dims.inputLen)
+        }
+    }
+
     func expectedOutputs(_ i: Int) -> [Float] {
         let start = i * Dims.outLen
         return Array(expected[start..<(start + Dims.outLen)])
@@ -75,9 +83,26 @@ enum SelfTest {
             emit("SELFTEST start compute_units \(units.rawValue)")
             let fixtures = try Fixtures.load()
             let runner = try ModelRunner(computeUnits: units)
+            var prevResult = op_result_t()    // only parsed to time op_parse_outputs; the result is not compared
+            var havePrev = false
             for i in 0..<Fixtures.steps {
-                let r = try runner.step(image: fixtures.frameFloats(i),
-                                        desireIndex: i == Fixtures.desireStep ? Fixtures.desireIndex : nil)
+                let r = try runner.step(desireIndex: i == Fixtures.desireStep ? Fixtures.desireIndex : nil) { history in
+                    fixtures.withFrameBytes(i) { history.push(bytes: $0) }
+                }
+                let p0 = Mono.now()
+                var parsed = op_result_t()
+                r.outputs.withUnsafeBufferPointer { bp in
+                    if havePrev {
+                        op_parse_outputs(bp.baseAddress, 15.0, ModelRunner.latActionT, ModelRunner.longActionT,
+                                         &prevResult, &parsed)
+                    } else {
+                        op_parse_outputs(bp.baseAddress, 15.0, ModelRunner.latActionT, ModelRunner.longActionT,
+                                         nil, &parsed)
+                    }
+                }
+                prevResult = parsed
+                havePrev = true
+                let parseMs = Mono.ms(since: p0)
                 let exp = fixtures.expectedOutputs(i)
                 var maxD: Double = 0
                 var sumD: Double = 0
@@ -93,8 +118,9 @@ enum SelfTest {
                 let meanD = sumD / Double(Dims.outLen)
                 let ok = meanD < 0.05 && maxD < 3.0
                 if !ok { passed = false }
-                emit(String(format: "SELFTEST step %ld max_abs_diff %.5f mean_abs_diff %.5f ms %.1f worst_idx %ld ref %.3f got %.3f n_over_0.5 %ld",
-                            i, maxD, meanD, r.ms, maxK, Double(exp[maxK]), Double(r.outputs[maxK]), nBig))
+                emit(String(format: "SELFTEST step %ld max_abs_diff %.5f mean_abs_diff %.5f ms %.1f worst_idx %ld ref %.3f got %.3f n_over_0.5 %ld build_ms %.2f predict_ms %.2f carry_ms %.2f parse_ms %.2f",
+                            i, maxD, meanD, r.ms, maxK, Double(exp[maxK]), Double(r.outputs[maxK]), nBig,
+                            r.buildMs, r.ms, r.carryMs, parseMs))
             }
         } catch {
             passed = false

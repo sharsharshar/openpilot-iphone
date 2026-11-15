@@ -215,8 +215,48 @@ def test_fixtures():
     worst = max(worst, float(np.abs(res["outputs"][0] - ex[t]).max()))
   check("fixtures replay through onnxruntime fp32 (state from zeros)", worst < 1e-4, "max abs diff vs outputs_f32.bin %.2e" % worst)
 
+# ---------------------------------------------------------------- 6. frame history (lean model input)
+def test_history():
+  sys.path.insert(0, os.path.join(ROOT, "scripts"))
+  from verify_lean import NumpyHistory
+  fr = np.fromfile(os.path.join(ROOT, "fixtures", "frames_u8.bin"), np.uint8).reshape(-1, 2, 6, 128, 256)
+  n = len(fr)
+  for mode in ("u8", "f32"):
+    for reset_at in (-1, 17):
+      run("hist", os.path.join(ROOT, "fixtures", "frames_u8.bin"), mode, tmp("stack.bin"), reset_at)
+      c = np.fromfile(tmp("stack.bin"), np.float32).reshape(n, 1, 24, 128, 256)
+      h = NumpyHistory(); bad = []
+      for t in range(n):
+        if t == reset_at: h = NumpyHistory()
+        h.push(fr[t])
+        if c[t].tobytes() != h.stack().tobytes(): bad.append(t)
+      check("history %s reset_at=%d: img_stack bitwise equal to numpy over %d steps (incl. zero-filled start and ring wrap)" % (mode, reset_at, n),
+            not bad, "mismatching steps %s" % bad[:5])
+  # the first stack really is: cam0 old (zeros), cam0 new, cam1 old (zeros), cam1 new
+  run("hist", os.path.join(ROOT, "fixtures", "frames_u8.bin"), "u8", tmp("stack.bin"), -1)
+  c = np.fromfile(tmp("stack.bin"), np.float32).reshape(n, 24, 128, 256)
+  ok = (not c[0, 0:6].any() and np.array_equal(c[0, 6:12], fr[0, 0]) and not c[0, 12:18].any() and np.array_equal(c[0, 18:24], fr[0, 1])
+        and np.array_equal(c[9, 0:6], fr[5, 0]) and np.array_equal(c[9, 6:12], fr[9, 0]) and np.array_equal(c[9, 12:18], fr[5, 1]))
+  check("history layout: [cam0 4-steps-ago, cam0 newest, cam1 4-steps-ago, cam1 newest]", ok, "step 0 and step 9 spot check")
+  # C-built stacks -> lean fp32 model -> the fixture outputs the app's self-test compares against
+  import onnxruntime as ort
+  lean = os.path.join(ROOT, "models", "driving_supercombo_lean_fp32.onnx")
+  if not os.path.exists(lean):
+    check("history -> lean model replay", False, "models/driving_supercombo_lean_fp32.onnx missing (run scripts/make_lean.py)"); return
+  ex = np.fromfile(os.path.join(ROOT, "fixtures", "outputs_f32.bin"), "<f4").reshape(-1, 2576)
+  sess = ort.InferenceSession(lean, providers=["CPUExecutionProvider"]); outs = [o.name for o in sess.get_outputs()]
+  st = {"state_desire_q": np.zeros((100, 1, 8), np.float32), "state_feat_q": np.zeros((96, 1, 512), np.float32)}; worst = 0.0
+  for t in range(n):
+    des = np.zeros(8, np.float32)
+    if t == 20: des[3] = 1.0
+    res = dict(zip(outs, sess.run(outs, {"img_stack": c[t][None], "desire": des, "traffic_convention": np.array([[1, 0]], np.float32),
+                                         "action_t": np.array([[0.2, 0.5]], np.float32), **st})))
+    st = {k: res["next_" + k] for k in st}
+    worst = max(worst, float(np.abs(res["outputs"][0] - ex[t]).max()))
+  check("fixtures replay: C history -> lean fp32 model vs outputs_f32.bin", worst < 1e-4, "max abs diff %.2e" % worst)
+
 if __name__ == "__main__":
   t0 = time.time()
-  test_parse(); test_matrix(); test_warp(); test_e2e(); test_fixtures()
+  test_parse(); test_matrix(); test_warp(); test_e2e(); test_fixtures(); test_history()
   print("\n%s (%.0fs)" % ("ALL PASSED" if not FAILS else "FAILED: " + ", ".join(FAILS), time.time() - t0))
   sys.exit(1 if FAILS else 0)

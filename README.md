@@ -26,6 +26,29 @@ Verified on GitHub's hosted Macs (see the Actions tab):
 Not verified anywhere yet: a real iPhone, the camera path (frame rate, intrinsics, orientation), the warp on
 real camera frames, and anything on the Neural Engine or GPU.
 
+## Lean model
+
+The original model carries its last five camera images as an input and an output (`state_img_q` / `next_state_img_q`,
+[2,5,6,128,256]) and only uses two of them: per camera, the image from 4 steps ago and the newest, stacked as channels
+(cam 0 old 0-5, cam 0 new 6-11, cam 1 old 12-17, cam 1 new 18-23), then `(x - 127.5) / 63.75`. `scripts/make_lean.py` derives
+that from the graph's constants and removes the queue by ONNX surgery: the model now takes `img_stack` [1,24,128,256]
+float32 (raw 0..255; the cast and the normalisation stay inside the model, which is exact because the values are integers)
+and carries only `state_desire_q` and `state_feat_q`. The history lives in C (`op_hist_*` in `core/opcore.c`, caller-owned
+memory, uint8, ring buffer) and is filled into the model's input array each step. `coreml/driving_supercombo.mlpackage` is now
+the lean package (same name); it has not been run anywhere yet (Core ML runs only on a Mac).
+
+Equivalence, measured on Linux (`scripts/verify_lean.py`, onnxruntime float32, 40 reference steps including the first
+steps with a zero-filled history): max abs difference to `reference/driving_reference_fp32.npz` is 0.0 (bit-identical), also
+against the original model run side by side; the C history reproduces the numpy history bitwise (`core/tests`). Wrong frame
+selection (frame 1 instead of 0) gives a difference of 20.7, so the check has teeth.
+
+Bytes per frame in the app (not counting what Core ML does internally): before, 1,572,864 B copied into `new_img`, 7,864,320 B
+written converting `next_state_img_q` float16 to float32 (3,932,160 B read), and Core ML took a 7,864,320 B `state_img_q` input:
+9.4 MB written by the app per frame. After, 393,216 B pushed into the ring (from fixtures; from the warp's floats it reads 1.57 MB
+and writes 0.39 MB) plus 3,145,728 B written building `img_stack` (786,432 B read): 3.5 MB written, no image state output.
+Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_ms` with the camera) are appended to the
+`SELFTEST step` and `LIVE frames` lines.
+
 ## Experiments
 
 - `experiments/ane_probe/`: drives the Neural Engine through Apple's private classes, bypassing Core ML. Also built

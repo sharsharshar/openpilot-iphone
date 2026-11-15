@@ -54,7 +54,9 @@ jobs:
           xcrun coremlcompiler compile ../coreml/driving_supercombo.mlpackage .
           cp ../fixtures/*.bin .
           printf 'import Foundation\nimport CoreML\nlet r = SelfTest.run(units: .cpuOnly)\nexit(r.passed ? 0 : 1)\n' > main.swift
-          swiftc -O ../ios/OpenpilotPhone/ModelRunner.swift ../ios/OpenpilotPhone/SelfTest.swift main.swift -o selftest_mac
+          # ModelRunner/SelfTest call the C core (frame history, output parsing): compile it and import its header.
+          clang -std=c99 -O2 -c ../core/opcore.c -o opcore.o
+          swiftc -O -import-objc-header ../core/opcore.h ../ios/OpenpilotPhone/ModelRunner.swift ../ios/OpenpilotPhone/SelfTest.swift main.swift opcore.o -o selftest_mac
           ls -la
           ./selftest_mac 2>/dev/null | tee ../verify-out/selftest_mac.txt || true
       - uses: actions/upload-artifact@v4

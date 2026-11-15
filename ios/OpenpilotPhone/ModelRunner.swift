@@ -7,7 +7,10 @@ enum Dims {
     static let imgH = 128
     static let imgW = 256
     static let imgLen = imgC * imgH * imgW          // one camera image
-    static let inputLen = 2 * imgLen                // new_img: narrow + wide
+    static let inputLen = 2 * imgLen                // one step of camera images: narrow + wide
+    static let histLen = 5                          // images kept per camera by the frame history
+    static let histBytes = histLen * inputLen       // uint8 storage of the whole history
+    static let stackLen = 2 * 2 * imgLen            // img_stack [1,24,128,256]: per camera, image 4 steps ago + newest
     static let outLen = 2576
     static let idxN = 33
 }
@@ -72,6 +75,37 @@ func halfBitsToFloat(_ h: UInt16) -> Float {
         bits = sign | (newExp << 23) | (man << 13)
     }
     return Float(bitPattern: bits)
+}
+
+/// Monotonic clock in seconds (does not jump with wall-clock changes), for the per-stage timings.
+enum Mono {
+    static func now() -> Double { return ProcessInfo.processInfo.systemUptime }
+    static func ms(since t: Double) -> Double { return (now() - t) * 1000.0 }
+}
+
+/// The last 5 model images per camera, kept as uint8 by the C ring buffer in opcore.c. Builds the lean model's
+/// img_stack input from it. Before 5 pushes the missing images read as zeros (as the old float queue did).
+final class FrameHistory {
+    private let mem: UnsafeMutablePointer<UInt8>
+    private var hist = op_hist_t()
+
+    init() {
+        mem = UnsafeMutablePointer<UInt8>.allocate(capacity: Dims.histBytes)
+        op_hist_init(&hist, mem)
+    }
+
+    deinit { mem.deallocate() }
+
+    func reset() { op_hist_reset(&hist) }
+
+    /// One step of images, Dims.inputLen bytes, layout [2][6][128][256].
+    func push(bytes: UnsafePointer<UInt8>) { op_hist_push_u8(&hist, bytes) }
+
+    /// One step of images as floats holding integer values 0..255 (the warp output), Dims.inputLen floats.
+    func push(floats: UnsafePointer<Float>) { op_hist_push_f32(&hist, floats) }
+
+    /// Writes Dims.stackLen floats (raw 0..255 values) in the layout the model's img_stack input expects.
+    func fillStack(_ dst: UnsafeMutablePointer<Float>) { op_hist_fill_stack(&hist, dst) }
 }
 
 enum MultiArrayUtil {
@@ -155,7 +189,7 @@ enum MultiArrayUtil {
     }
 }
 
-/// Owns the Core ML model and the three recurrent state arrays. Not thread safe: use from one queue.
+/// Owns the Core ML model, the frame history and the two small recurrent state arrays. Not thread safe: use from one queue.
 final class ModelRunner {
     static let latActionT: Float = 0.2
     static let longActionT: Float = 0.5
@@ -163,15 +197,14 @@ final class ModelRunner {
     let computeUnits: MLComputeUnits
     private let model: MLModel
 
-    private let newImg: MLMultiArray
+    private let history = FrameHistory()
+    private let imgStack: MLMultiArray
     private let desire: MLMultiArray
     private let trafficConvention: MLMultiArray
     private let actionT: MLMultiArray
-    private let stateImg: MLMultiArray
     private let stateDesire: MLMultiArray
     private let stateFeat: MLMultiArray
 
-    private static let stateImgCount = 2 * 5 * 6 * 128 * 256
     private static let stateDesireCount = 100 * 1 * 8
     private static let stateFeatCount = 96 * 1 * 512
 
@@ -184,11 +217,10 @@ final class ModelRunner {
         self.model = try MLModel(contentsOf: url, configuration: cfg)
         self.computeUnits = computeUnits
 
-        newImg = try MultiArrayUtil.makeZeroFloat32(shape: [2, 6, 128, 256])
+        imgStack = try MultiArrayUtil.makeZeroFloat32(shape: [1, 24, 128, 256])
         desire = try MultiArrayUtil.makeZeroFloat32(shape: [8])
         trafficConvention = try MultiArrayUtil.makeZeroFloat32(shape: [1, 2])
         actionT = try MultiArrayUtil.makeZeroFloat32(shape: [1, 2])
-        stateImg = try MultiArrayUtil.makeZeroFloat32(shape: [2, 5, 6, 128, 256])
         stateDesire = try MultiArrayUtil.makeZeroFloat32(shape: [100, 1, 8])
         stateFeat = try MultiArrayUtil.makeZeroFloat32(shape: [96, 1, 512])
 
@@ -201,40 +233,42 @@ final class ModelRunner {
 
     /// Back to the all-zero state (what the first run expects).
     func resetState() {
-        memset(stateImg.dataPointer, 0, ModelRunner.stateImgCount * MemoryLayout<Float>.size)
+        history.reset()
         memset(stateDesire.dataPointer, 0, ModelRunner.stateDesireCount * MemoryLayout<Float>.size)
         memset(stateFeat.dataPointer, 0, ModelRunner.stateFeatCount * MemoryLayout<Float>.size)
     }
 
-    /// One model step. `image` holds 2 x OP_IMG_LEN floats (values 0..255), layout [2][6][128][256].
-    /// Returns the 2576 outputs and the wall-clock milliseconds spent inside the prediction call.
+    /// One model step. `push` is called first and must append this step's images to the history it is given
+    /// (Dims.inputLen values, layout [2][6][128][256], 0..255). The runner then builds img_stack straight into the
+    /// model's input array. Returns the 2576 outputs and, in milliseconds on a monotonic clock: `ms`, the prediction
+    /// call only; `buildMs`, history push + img_stack + input arrays; `carryMs`, reading outputs and carrying state.
     /// `desireIndex`, when set, pulses that entry of the 8-long desire input to 1 for this step only.
-    func step(image: [Float], desireIndex: Int? = nil) throws -> (outputs: [Float], ms: Double) {
-        guard image.count == Dims.inputLen else {
-            throw ModelError.badArray("image has \(image.count) floats, expected \(Dims.inputLen)")
-        }
-        image.withUnsafeBufferPointer { bp in
-            memcpy(newImg.dataPointer, bp.baseAddress!, Dims.inputLen * MemoryLayout<Float>.size)
-        }
+    func step(desireIndex: Int? = nil, push: (FrameHistory) -> Void) throws
+        -> (outputs: [Float], ms: Double, buildMs: Double, carryMs: Double) {
+        let b0 = Mono.now()
+        push(history)
+        history.fillStack(imgStack.dataPointer.assumingMemoryBound(to: Float.self))
 
         let dp = desire.dataPointer.assumingMemoryBound(to: Float.self)
         for k in 0..<8 { dp[k] = 0 }
         if let di = desireIndex, di >= 0, di < 8 { dp[di] = 1 }
 
         let inputs: [String: Any] = [
-            "new_img": MLFeatureValue(multiArray: newImg),
+            "img_stack": MLFeatureValue(multiArray: imgStack),
             "desire": MLFeatureValue(multiArray: desire),
             "traffic_convention": MLFeatureValue(multiArray: trafficConvention),
             "action_t": MLFeatureValue(multiArray: actionT),
-            "state_img_q": MLFeatureValue(multiArray: stateImg),
             "state_desire_q": MLFeatureValue(multiArray: stateDesire),
             "state_feat_q": MLFeatureValue(multiArray: stateFeat),
         ]
         let provider = try MLDictionaryFeatureProvider(dictionary: inputs)
+        let buildMs = Mono.ms(since: b0)
 
-        let t0 = ProcessInfo.processInfo.systemUptime
+        let t0 = Mono.now()
         let result = try model.prediction(from: provider)
-        let ms = (ProcessInfo.processInfo.systemUptime - t0) * 1000.0
+        let ms = Mono.ms(since: t0)
+
+        let c0 = Mono.now()
 
         guard let outArr = result.featureValue(for: "outputs")?.multiArrayValue else {
             throw ModelError.missingOutput("outputs")
@@ -245,24 +279,18 @@ final class ModelRunner {
         }
 
         // Carry state: next_state_* (float16) -> state_* (float32) for the next run.
-        guard let nImg = result.featureValue(for: "next_state_img_q")?.multiArrayValue else {
-            throw ModelError.missingOutput("next_state_img_q")
-        }
         guard let nDes = result.featureValue(for: "next_state_desire_q")?.multiArrayValue else {
             throw ModelError.missingOutput("next_state_desire_q")
         }
         guard let nFeat = result.featureValue(for: "next_state_feat_q")?.multiArrayValue else {
             throw ModelError.missingOutput("next_state_feat_q")
         }
-        try MultiArrayUtil.copyToFloats(nImg,
-                                        into: stateImg.dataPointer.assumingMemoryBound(to: Float.self),
-                                        count: ModelRunner.stateImgCount)
         try MultiArrayUtil.copyToFloats(nDes,
                                         into: stateDesire.dataPointer.assumingMemoryBound(to: Float.self),
                                         count: ModelRunner.stateDesireCount)
         try MultiArrayUtil.copyToFloats(nFeat,
                                         into: stateFeat.dataPointer.assumingMemoryBound(to: Float.self),
                                         count: ModelRunner.stateFeatCount)
-        return (outputs, ms)
+        return (outputs, ms, buildMs, Mono.ms(since: c0))
     }
 }

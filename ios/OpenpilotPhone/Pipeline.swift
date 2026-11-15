@@ -224,17 +224,23 @@ final class Pipeline: ObservableObject {
 
     private func process(_ frame: Frame) {
         guard let runner = runner else { return }
-        var input: [Float]
+        let input: [Float]
+        var warpMs: Double? = nil      // only measured for camera frames
         switch frame {
         case .modelInput(let f):
             input = f
         case .camera(let pb):
+            let w0 = Mono.now()
             guard let f = warp(pb) else { return }
+            warpMs = Mono.ms(since: w0)
             input = f
         }
 
         do {
-            let r = try runner.step(image: input)
+            let r = try runner.step { history in
+                input.withUnsafeBufferPointer { history.push(floats: $0.baseAddress!) }
+            }
+            let p0 = Mono.now()
             var out = op_result_t()
             r.outputs.withUnsafeBufferPointer { bp in
                 if havePrev {
@@ -249,11 +255,15 @@ final class Pipeline: ObservableObject {
             }
             prev = out
             havePrev = true
+            let parseMs = Mono.ms(since: p0)
             let disp = Pipeline.makeDisplay(&out)
             liveCount += 1
             if liveCount % 20 == 0 {
-                NSLog("LIVE frames %ld ms %.1f curvature %.6f accel %.4f lead_prob %.3f",
-                      liveCount, r.ms, Double(out.desired_curvature), Double(out.desired_accel), Double(out.lead_prob))
+                var line = String(format: "LIVE frames %ld ms %.1f curvature %.6f accel %.4f lead_prob %.3f build_ms %.2f predict_ms %.2f carry_ms %.2f parse_ms %.2f",
+                                  liveCount, r.ms, Double(out.desired_curvature), Double(out.desired_accel), Double(out.lead_prob),
+                                  r.buildMs, r.ms, r.carryMs, parseMs)
+                if let w = warpMs { line += String(format: " warp_ms %.2f", w) }
+                NSLog("%@", line)
             }
 
             let now = ProcessInfo.processInfo.systemUptime

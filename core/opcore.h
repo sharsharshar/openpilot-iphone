@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
 #include <stdint.h>
 #define OP_IMG_C 6
 #define OP_IMG_H 128
@@ -46,6 +47,33 @@ typedef struct {
 /* Parse the raw 2576-float model output. prev may be NULL on the first call. */
 void op_parse_outputs(const float *outputs, float v_ego, float lat_action_t, float long_action_t,
                       const op_result_t *prev, op_result_t *out);
+
+/* ------------------------------------------------------------------ frame history for the lean model
+   The lean model takes img_stack [1][24][128][256] float32 (raw 0..255 values): for camera 0 then camera 1,
+   6 channels of the image from 4 steps ago followed by 6 channels of the newest image. The history keeps the last
+   OP_HIST_LEN model images per camera as uint8 (the warp output is integer valued 0..255, so this is exact and
+   4x smaller than float32). Caller owns the memory: pass a buffer of OP_HIST_BYTES bytes to op_hist_init.
+   Before OP_HIST_LEN pushes the missing images read as zeros, like the original model's zero-initialised queue. */
+#define OP_HIST_LEN 5
+#define OP_HIST_CAMS 2
+#define OP_HIST_BYTES ((size_t)OP_HIST_LEN * OP_HIST_CAMS * OP_IMG_LEN)
+#define OP_STACK_LEN (OP_HIST_CAMS * 2 * OP_IMG_LEN)   /* 24 * 128 * 256 floats */
+
+typedef struct {
+  uint8_t *buf;   /* OP_HIST_BYTES bytes, slot-major: slot, camera, then [6][128][256]. Owned by the caller. */
+  int head;       /* slot the next push writes to; also the slot of the oldest image kept */
+} op_hist_t;
+
+/* Attach the buffer and clear it to zeros. */
+void op_hist_init(op_hist_t *h, uint8_t *buf);
+/* Forget all images (zeros again). */
+void op_hist_reset(op_hist_t *h);
+/* Append one step: frame is [2][6][128][256] (camera 0 then 1), the layout of the model's old new_img input.
+   The float version expects integer values 0..255 (anything else is rounded and clamped). */
+void op_hist_push_u8(op_hist_t *h, const uint8_t *frame);
+void op_hist_push_f32(op_hist_t *h, const float *frame);
+/* Write img_stack (OP_STACK_LEN floats) from the current history. */
+void op_hist_fill_stack(const op_hist_t *h, float *img_stack);
 
 /* x positions (metres) for lane lines / road edges, and time stamps (seconds) for the plan. */
 extern const float OP_X_IDXS[OP_IDX_N];

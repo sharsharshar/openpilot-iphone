@@ -209,3 +209,46 @@ void op_parse_outputs(const float *o, float v_ego_in, float lat_t_in, float long
   out->desired_accel = (float)acc;
   out->should_stop = stop;
 }
+
+/* ------------------------------------------------------------------ frame history */
+
+#define HIST_FRAME (OP_HIST_CAMS * OP_IMG_LEN)   /* one step: both cameras */
+
+void op_hist_reset(op_hist_t *h) {
+  memset(h->buf, 0, OP_HIST_BYTES);
+  h->head = 0;
+}
+
+void op_hist_init(op_hist_t *h, uint8_t *buf) {
+  h->buf = buf;
+  op_hist_reset(h);
+}
+
+static void hist_advance(op_hist_t *h) { h->head = (h->head + 1) % OP_HIST_LEN; }
+
+void op_hist_push_u8(op_hist_t *h, const uint8_t *frame) {
+  memcpy(h->buf + (size_t)h->head * HIST_FRAME, frame, HIST_FRAME);
+  hist_advance(h);
+}
+
+void op_hist_push_f32(op_hist_t *h, const float *frame) {
+  uint8_t *dst = h->buf + (size_t)h->head * HIST_FRAME;
+  for (size_t i = 0; i < HIST_FRAME; i++) {
+    float v = rintf(frame[i]);
+    dst[i] = !(v > 0.0f) ? 0 : (v > 255.0f ? 255 : (uint8_t)v);   /* NaN -> 0 */
+  }
+  hist_advance(h);
+}
+
+void op_hist_fill_stack(const op_hist_t *h, float *img_stack) {
+  /* After a push, head is the slot of the image pushed OP_HIST_LEN-1 steps ago and head-1 the newest.
+     The model uses frames 0 and 4 of the 5 kept, i.e. oldest and newest. */
+  const int oldest = h->head, newest = (h->head + OP_HIST_LEN - 1) % OP_HIST_LEN;
+  for (int cam = 0; cam < OP_HIST_CAMS; cam++) {
+    const uint8_t *o = h->buf + (size_t)oldest * HIST_FRAME + (size_t)cam * OP_IMG_LEN;
+    const uint8_t *n = h->buf + (size_t)newest * HIST_FRAME + (size_t)cam * OP_IMG_LEN;
+    float *d = img_stack + (size_t)cam * 2 * OP_IMG_LEN;
+    for (int i = 0; i < OP_IMG_LEN; i++) d[i] = (float)o[i];
+    for (int i = 0; i < OP_IMG_LEN; i++) d[OP_IMG_LEN + i] = (float)n[i];
+  }
+}
