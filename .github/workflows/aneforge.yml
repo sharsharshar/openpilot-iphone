@@ -1,0 +1,81 @@
+name: aneforge
+
+# Experiment: ANEForge (https://github.com/sbryngelson/ANEForge, MIT) static analysis and cross-compilation
+# of the driving model for an iPhone-class ANE family (h16s). The hosted macOS runners are virtual machines
+# with no Neural Engine, so the e5rt compile stages may well fail; every step tolerates failure and the job
+# still succeeds. The uploaded output is the result.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "experiments/aneforge/**"
+      - ".github/workflows/aneforge.yml"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  ANEFORGE_COMMIT: 34c18a7eee1b6be129cbaadb088f96a89f395420
+
+jobs:
+  aneforge:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Clone ANEForge at the pinned commit and install it
+        run: |
+          set +e
+          mkdir -p out
+          git clone https://github.com/sbryngelson/ANEForge "$RUNNER_TEMP/ANEForge" 2>&1 | tee out/clone.txt
+          git -C "$RUNNER_TEMP/ANEForge" checkout "$ANEFORGE_COMMIT" 2>&1 | tee -a out/clone.txt
+          git -C "$RUNNER_TEMP/ANEForge" log -1 --format='%H %cd' | tee out/aneforge_commit.txt
+          python3.12 -m venv "$RUNNER_TEMP/venv" 2>&1 | tee out/venv.txt
+          "$RUNNER_TEMP/venv/bin/python" -m pip install numpy onnx onnxruntime 2>&1 | tail -3 | tee out/pip_deps.txt
+          (cd "$RUNNER_TEMP/ANEForge" && "$RUNNER_TEMP/venv/bin/python" -m pip install -e . 2>&1 | tail -5) | tee out/pip_aneforge.txt
+          uname -a | tee out/host.txt
+          sysctl -n machdep.cpu.brand_string 2>&1 | tee -a out/host.txt
+          sw_vers 2>&1 | tee -a out/host.txt
+          exit 0
+
+      - name: Static analysis (import, preflight, MIL lowering; no compile)
+        run: |
+          set +e
+          perl -e 'alarm shift; exec @ARGV' 900 \
+            "$RUNNER_TEMP/venv/bin/python" -I experiments/aneforge/run_preflight.py \
+            "$RUNNER_TEMP/ANEForge" models/driving_supercombo.onnx out/preflight 2>&1 | tee out/run_preflight.txt
+          echo "run_preflight exit: ${PIPESTATUS[0]}" | tee -a out/run_preflight.txt
+          exit 0
+
+      - name: Build ANEForge native library (its own build script)
+        run: |
+          set +e
+          (cd "$RUNNER_TEMP/ANEForge" && perl -e 'alarm shift; exec @ARGV' 300 sh aneforge/_lib/build.sh) 2>&1 | tee out/build_dylib.txt
+          echo "build exit: ${PIPESTATUS[0]}" | tee -a out/build_dylib.txt
+          exit 0
+
+      - name: Cross-compile for h16s (cross_compile_check and af.compile)
+        run: |
+          set +e
+          ANEFORGE_STAGE_TIMEOUT=600 perl -e 'alarm shift; exec @ARGV' 1800 \
+            "$RUNNER_TEMP/venv/bin/python" experiments/aneforge/try_cross_compile.py \
+            "$RUNNER_TEMP/ANEForge" out/preflight/driving_cut_adapted.onnx out/cross h16s 2>&1 | tee out/try_cross_compile.txt
+          echo "try_cross_compile exit: ${PIPESTATUS[0]}" | tee -a out/try_cross_compile.txt
+          grep '^ANEFORGE' out/run_preflight.txt out/try_cross_compile.txt > out/summary.txt
+          exit 0
+
+      - name: Upload output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aneforge-output
+          path: |
+            out/
+            !out/**/aneforge-cache/**
+          if-no-files-found: warn
