@@ -81,17 +81,20 @@ enum SelfTest {
                 let exp = fixtures.expectedOutputs(i)
                 var maxD: Double = 0
                 var sumD: Double = 0
+                var maxK = 0
+                var nBig = 0
                 for k in 0..<Dims.outLen {
                     let d = Double(abs(r.outputs[k] - exp[k]))
                     if d.isNaN { maxD = Double.infinity; sumD = Double.infinity; break }
-                    if d > maxD { maxD = d }
+                    if d > maxD { maxD = d; maxK = k }
+                    if d > 0.5 { nBig += 1 }
                     sumD += d
                 }
                 let meanD = sumD / Double(Dims.outLen)
                 let ok = meanD < 0.05 && maxD < 3.0
                 if !ok { passed = false }
-                emit(String(format: "SELFTEST step %ld max_abs_diff %.5f mean_abs_diff %.5f ms %.1f",
-                            i, maxD, meanD, r.ms))
+                emit(String(format: "SELFTEST step %ld max_abs_diff %.5f mean_abs_diff %.5f ms %.1f worst_idx %ld ref %.3f got %.3f n_over_0.5 %ld",
+                            i, maxD, meanD, r.ms, maxK, Double(exp[maxK]), Double(r.outputs[maxK]), nBig))
             }
         } catch {
             passed = false

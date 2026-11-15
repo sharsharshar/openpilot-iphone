@@ -37,6 +37,18 @@ jobs:
             python scripts/verify_coreml_mac.py coreml/driving_supercombo.mlpackage \
               reference/driving_reference_fp32.npz "$units" 2>&1 | tee -a verify-out/verify.txt
           done
+      # Diagnostic: the app's own model-runner and self-test code, built as a plain macOS command-line tool.
+      # Same Swift, same Xcode-style compiled model, but no simulator: separates app bugs from simulator numerics.
+      - name: Run the app's self-test code natively on macOS
+        continue-on-error: true
+        run: |
+          mkdir -p macrun && cd macrun
+          xcrun coremlcompiler compile ../coreml/driving_supercombo.mlpackage .
+          cp ../fixtures/*.bin .
+          printf 'import Foundation\nimport CoreML\nlet r = SelfTest.run(units: .cpuOnly)\nexit(r.passed ? 0 : 1)\n' > main.swift
+          swiftc -O ../ios/OpenpilotPhone/ModelRunner.swift ../ios/OpenpilotPhone/SelfTest.swift main.swift -o selftest_mac
+          ls -la
+          ./selftest_mac 2>/dev/null | tee ../verify-out/selftest_mac.txt || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
