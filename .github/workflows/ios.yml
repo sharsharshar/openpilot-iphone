@@ -2,6 +2,10 @@ name: ios
 
 on:
   push:
+    paths-ignore:
+      - 'experiments/tinygrad_metal/**'
+      - '.github/workflows/tinygrad-metal.yml'
+      - '.github/workflows/ane-probe.yml'
   workflow_dispatch:
 
 defaults:

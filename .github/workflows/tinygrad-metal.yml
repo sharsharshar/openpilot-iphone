@@ -1,0 +1,68 @@
+name: tinygrad-metal
+
+# Experiment: run the openpilot driving model with tinygrad on Apple's Metal backend and compare with the
+# fp32 onnxruntime reference. See experiments/tinygrad_metal/RESULTS.md.
+#
+# NOTE: GitHub-hosted macOS runners are virtual machines with a paravirtualised GPU. Timings measured here
+# are NOT representative of real Apple hardware; only the numerics, the kernel counts and the generated
+# kernel sources carry over.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "experiments/tinygrad_metal/**"
+      - ".github/workflows/tinygrad-metal.yml"
+
+jobs:
+  tinygrad-metal:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned tinygrad
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "tinygrad==0.14.0" numpy onnx
+          python -c "import tinygrad, numpy; from tinygrad import Device; print('tinygrad ok')"
+          system_profiler SPDisplaysDataType || true
+          sysctl -n machdep.cpu.brand_string || true
+
+      - name: Run on Metal
+        # JIT=2 turns off graph batching (what openpilot's own Mac build sets). Fails only on a crash or non-finite output.
+        env:
+          DEV: METAL
+          JIT: "2"
+        run: |
+          mkdir -p out
+          set -o pipefail
+          python -I experiments/tinygrad_metal/run_tinygrad.py --dump-kernels out/kernels_metal 2>&1 | tee out/metal.log
+
+      - name: Run on CPU backend for comparison
+        # Same script, tinygrad's clang CPU backend (default arch for this machine).
+        env:
+          DEV: "CPU:CLANG"
+          JIT: "2"
+        run: |
+          set -o pipefail
+          python -I experiments/tinygrad_metal/run_tinygrad.py --dump-kernels out/kernels_cpu 2>&1 | tee out/cpu.log
+
+      - name: Print results
+        if: always()
+        run: |
+          grep -h "TINYGRAD RESULT" out/metal.log out/cpu.log || true
+          echo "--- Metal log tail"; tail -n 60 out/metal.log || true
+          echo "--- CPU log tail"; tail -n 30 out/cpu.log || true
+
+      - name: Upload logs and kernels
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tinygrad-metal-results
+          path: out/
+          if-no-files-found: warn
