@@ -1,5 +1,6 @@
-# Large source models (not needed by CI)
-models/
+# Large source models. Only the original driving model is committed (the experiments need it).
+models/*
+!models/driving_supercombo.onnx
 
 # Python
 __pycache__/
