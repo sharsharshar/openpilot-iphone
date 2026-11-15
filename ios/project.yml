@@ -1,0 +1,55 @@
+name: OpenpilotPhone
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+targets:
+  OpenpilotPhone:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: OpenpilotPhone
+      - path: ../core/opcore.c
+        group: core
+        compilerFlags: ["-std=c99"]
+      - path: ../core/opcore.h
+        group: core
+        buildPhase: none
+      - path: ../coreml/driving_supercombo.mlpackage
+        group: coreml
+        type: file
+        buildPhase: sources
+      - path: ../fixtures
+        group: fixtures
+        includes: ["*.bin"]
+        buildPhase: resources
+    info:
+      path: Generated/Info.plist
+      properties:
+        CFBundleDisplayName: Openpilot Phone
+        LSRequiresIPhoneOS: true
+        NSCameraUsageDescription: "The camera feeds the driving model with road images. Nothing is recorded or uploaded."
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.openpilotphone
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_OBJC_BRIDGING_HEADER: OpenpilotPhone/OpenpilotPhone-Bridging-Header.h
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../core"
+        GCC_C_LANGUAGE_STANDARD: c99
+        # We load the model with the generic MLModel API, so skip Xcode's generated model class.
+        COREML_CODEGEN_LANGUAGE: None
+        # Signing: simulator builds need none (CI passes CODE_SIGNING_ALLOWED=NO).
+        # For a real device set your team here or in Xcode's Signing & Capabilities tab.
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""

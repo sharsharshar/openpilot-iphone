@@ -1,0 +1,18 @@
+# Large source models (not needed by CI)
+models/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Xcode / build products
+ios/*.xcodeproj/
+ios/Generated/
+ios/build/
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+core/tests/build/
