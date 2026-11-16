@@ -91,6 +91,8 @@ jobs:
           test -f core/opcore.c
           test -f fixtures/frames_u8.bin
           test -f fixtures/outputs_f32.bin
+          test -f fixtures/real_frames_u8.bin
+          test -f fixtures/real_outputs_f32.bin
 
       - name: Install XcodeGen
         run: brew install xcodegen

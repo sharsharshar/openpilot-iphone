@@ -26,9 +26,9 @@ final class FixtureSource: FrameSource {
 
     func start(handler: @escaping (Frame) -> Void, status: @escaping (String) -> Void) {
         do {
-            let fx = try Fixtures.load()
+            let fx = try Fixtures.load(.real)   // 2 s of real road video, looped
             var all: [[Float]] = []
-            for i in 0..<min(8, Fixtures.steps) { all.append(fx.frameFloats(i)) }   // 8 frames is enough to loop
+            for i in 0..<Fixtures.steps { all.append(fx.frameFloats(i)) }
             frames = all
         } catch {
             status("fixtures: \(error)")

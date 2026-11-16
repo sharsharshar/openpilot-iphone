@@ -39,6 +39,12 @@ targets:
       - path: ../fixtures/outputs_f32.bin
         group: fixtures
         buildPhase: resources
+      - path: ../fixtures/real_frames_u8.bin
+        group: fixtures
+        buildPhase: resources
+      - path: ../fixtures/real_outputs_f32.bin
+        group: fixtures
+        buildPhase: resources
     dependencies:
       - sdk: IOSurface.framework
     info:

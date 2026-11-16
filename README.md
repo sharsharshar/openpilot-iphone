@@ -64,7 +64,8 @@ Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_m
   model-replay segment, both cameras, logged calibration and speed). The warp matches openpilot's on real frames,
   and the model's curvature output correlates 0.998 with what the comma device computed on that drive. float16 and
   the exact GELU change driving outputs negligibly; 8-bit weights and cruder GELU forms do not. The video and
-  frames are downloaded at run time and are not in this repo. See `RESULTS.md`.
+  frames are downloaded at run time; only a 2-second, model-input-sized excerpt is committed, as the
+  self-test's second fixture set (`fixtures/README.md`). See `RESULTS.md`.
 
 ## Simulator caveat
 
