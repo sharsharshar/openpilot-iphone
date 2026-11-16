@@ -45,7 +45,7 @@ class GB:
     def shapes(self):
         """Static shapes of every tensor (onnx shape inference on a light copy of the graph: weights are given as shapes only)."""
         if self._shapes is None:
-            self.prune()
+            self.sort()
             small = {k: v for k, v in self.init.items() if v.size <= 1024}      # shape-like constants must keep their values
             big = {k: v for k, v in self.init.items() if v.size > 1024}
             ins = list(self.inputs) + [helper.make_tensor_value_info(k, TensorProto.FLOAT if v.dtype.kind == "f" else TensorProto.INT64 if v.dtype.kind == "i" else TensorProto.BOOL, list(v.shape))

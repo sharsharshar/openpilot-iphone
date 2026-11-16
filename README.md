@@ -77,6 +77,11 @@ Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_m
   engineers, an iPhone app cannot talk to a vendor-specific USB device such as the panda directly; the wired
   route Apple supports is a bridge that presents itself as a USB Ethernet (NCM) adapter. Nothing here is tested.
 
+- `experiments/kernel_fusion/`: where the small model's compute goes and what fused or hand-written kernels
+  buy, measured on a Linux CPU (no phone speeds). Launch overhead is under 2% of a step and tinygrad already
+  fuses elementwise work, so fusion is not the lever; the gap is kernel quality (tinygrad's generated CPU code is
+  about 5x slower than a hand-written or onnxruntime kernel on the hottest block). Also sizes the big model.
+
 ## Simulator caveat
 
 The simulator has no Neural Engine and no camera. It runs the model on the Mac CPU (and maybe GPU)

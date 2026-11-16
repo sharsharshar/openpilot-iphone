@@ -9,16 +9,21 @@ import argparse, collections, csv, os, re, statistics
 import numpy as np
 
 ap = argparse.ArgumentParser()
-ap.add_argument("csv")
+ap.add_argument("csv", nargs="+", help="one or more per-launch CSVs of the same model/options; per launch the minimum over the files is used")
 ap.add_argument("--col", default="seq_min_us", help="time column: t_min_us / t_median_us (launch alone, repeated) or seq_min_us / seq_median_us (in step order)")
 ap.add_argument("--launch-us", type=float, default=15.0, help="fixed cost per jitted launch (from 02b_launch_overhead.py)")
 ap.add_argument("--out", default=None, help="write the labelled per-launch table here")
 a = ap.parse_args()
-rows = list(csv.DictReader(open(a.csv)))
+rows = list(csv.DictReader(open(a.csv[0])))
+others = [list(csv.DictReader(open(f))) for f in a.csv[1:]]
 for r in rows:
+  r["i"] = int(r["i"])
   for k in ("ops", "lds_bytes", "mem_bytes"): r[k] = int(r[k])
   for k in r:
     if k.endswith("_us"): r[k] = float(r[k])
+  for o in others:
+    for k in r:
+      if k.endswith("_us"): r[k] = min(r[k], float(o[r["i"]][k]))
   r["t"] = r[a.col]
 
 def label(r):

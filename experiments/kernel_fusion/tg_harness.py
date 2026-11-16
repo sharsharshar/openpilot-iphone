@@ -63,7 +63,8 @@ class NumpyHistory:  # same as scripts/verify_lean.py: last 5 model images per c
 
 hist = NumpyHistory()
 state = {n: Tensor.zeros(*gi[n].shape, dtype=gi[n].dtype).contiguous().realize() for n in STATE}
-dmax, dmean, times, clone_times = [], [], [], []
+dmax, dmean, times, clone_times, cpu_times = [], [], [], [], []
+load0 = os.getloadavg()[0]
 last = None
 for t in range(N):
   hist.push(ref["frames"][t])
@@ -71,10 +72,10 @@ for t in range(N):
   feed = {**img, "desire": Tensor(ref["desire"][t]).realize(), "traffic_convention": Tensor(ref["traffic_convention"][t]).realize(),
           "action_t": Tensor(ref["action_t"][t]).realize(), **state}
   Device[dev].synchronize()
-  st = time.perf_counter()
+  st = time.perf_counter(); cp = time.process_time()
   res = step(**feed)
   Device[dev].synchronize()
-  times.append(time.perf_counter() - st)       # the jitted step alone (all kernel launches) + device sync
+  times.append(time.perf_counter() - st); cpu_times.append(time.process_time() - cp)       # the jitted step alone (all kernel launches) + device sync
   st = time.perf_counter()
   state = {n: res[1 + i].clone().realize() for i, n in enumerate(STATE)}
   Device[dev].synchronize()
@@ -111,7 +112,7 @@ res_d = dict(label=args.label, model=os.path.basename(args.model), dev=os.enviro
              env={k: os.environ[k] for k in os.environ if k in ("PCONTIG", "SPLIT_REDUCEOP", "NOOPT", "BEAM", "JITBEAM", "WINO", "MAX_KERNEL_BUFFERS", "NOLOCALS", "THREADS", "REDUCEOP_SPLIT_THRESHOLD", "JIT", "TRANSCENDENTAL", "DEBUG")},
              calls=len(calls), kernels=len(progs), distinct=len(distinct), ops_G=sum(ops) / 1e9, lds_MB=sum(lds) / 1e6, mem_MB=sum(mem) / 1e6,
              src_KiB=src_bytes / 1024, worst_max=max(dmax), worst_mean=max(dmean), mean_mean=float(np.mean(dmean)),
-             step_ms_median=statistics.median(warm) * 1e3, step_ms_min=min(warm) * 1e3, n_timed=len(warm), clone_ms_median=statistics.median(cwarm) * 1e3, load_s=t_load)
+             step_ms_median=statistics.median(warm) * 1e3, step_ms_min=min(warm) * 1e3, n_timed=len(warm), step_cpu_ms_median=statistics.median(cpu_times[args.warm:]) * 1e3, step_cpu_ms_min=min(cpu_times[args.warm:]) * 1e3, load_start=load0, load_end=os.getloadavg()[0], clone_ms_median=statistics.median(cwarm) * 1e3, load_s=t_load)
 
 if args.per_kernel:
   from tinygrad.engine.jit import _prepare_jit_inputs

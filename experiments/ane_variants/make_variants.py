@@ -46,7 +46,7 @@ def build(name, gb):
         return R.rw_cleanup_reshapes(gb)
     raise KeyError(name)
 
-VARIANTS = ["A", "B", "C", "D", "E", "ALL_DROPIN", "ALL"]
+VARIANTS = ["base", "A", "B", "C", "D", "E", "ALL_DROPIN", "ALL"]    # base = the lean model, copied unchanged
 
 
 def main():
@@ -57,6 +57,15 @@ def main():
     model = onnx.load(src)
     meta = {}
     for name in only:
+        if name == "base":
+            import shutil
+            shutil.copyfile(src, os.path.join(out, "base.onnx"))
+            m = model
+            meta["base"] = {"nodes": len(m.graph.node), "ops": {}, "log": ["unchanged copy of the lean model"],
+                            "inputs": [(i.name, [d.dim_value for d in i.type.tensor_type.shape.dim]) for i in m.graph.input],
+                            "outputs": [(o.name, [d.dim_value for d in o.type.tensor_type.shape.dim]) for o in m.graph.output]}
+            print(f"base: copy of {src}")
+            continue
         gb = build(name, GB(model))
         m = gb.finalize()
         path = os.path.join(out, f"{name}.onnx")

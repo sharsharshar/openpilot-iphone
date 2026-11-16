@@ -1,0 +1,32 @@
+
+== stage0.block0: C=64 hidden=192 pixels=2048  MACs=50.3M  hidden tensor 1.57 MB (fp32)  tile scratch 12 KiB
+  correctness, max abs diff vs the real model's block output (output magnitude 65.45):
+    ort_opt_off        3.05e-05
+    ort_opt_all        7.63e-06
+    tg                 2.67e-05
+    c_unfused_5pass    2.67e-05
+    c_epilogue_2pass   2.67e-05
+    c_fused_1pass      2.67e-05
+  time, min of 60 (ms); GFLOP/s counts 2 flops per MAC, gelu not counted:
+    tg                    8.888 ms    11.3 GFLOP/s  (2 kernels)
+    ort_opt_off           1.442 ms    69.8 GFLOP/s
+    ort_opt_all           1.166 ms    86.3 GFLOP/s
+    c_unfused_5pass       3.085 ms    32.6 GFLOP/s
+    c_epilogue_2pass      2.897 ms    34.7 GFLOP/s
+    c_fused_1pass         1.645 ms    61.2 GFLOP/s
+
+== stage2.block0: C=256 hidden=768 pixels=128  MACs=50.3M  hidden tensor 0.39 MB (fp32)  tile scratch 48 KiB
+  correctness, max abs diff vs the real model's block output (output magnitude 3.92):
+    ort_opt_off        9.54e-07
+    ort_opt_all        4.77e-07
+    tg                 2.38e-06
+    c_unfused_5pass    2.44e-06
+    c_epilogue_2pass   2.44e-06
+    c_fused_1pass      2.44e-06
+  time, min of 60 (ms); GFLOP/s counts 2 flops per MAC, gelu not counted:
+    tg                    5.727 ms    17.6 GFLOP/s  (2 kernels)
+    ort_opt_off           0.860 ms   117.0 GFLOP/s
+    ort_opt_all           0.848 ms   118.7 GFLOP/s
+    c_unfused_5pass       1.573 ms    64.0 GFLOP/s
+    c_epilogue_2pass      1.611 ms    62.5 GFLOP/s
+    c_fused_1pass         1.374 ms    73.3 GFLOP/s

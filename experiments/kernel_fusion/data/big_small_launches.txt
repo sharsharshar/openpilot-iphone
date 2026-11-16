@@ -1,0 +1,52 @@
+
+### big.pkl: 474 launches, 96.234 Gop, lds 7.06 GB, mem 1216.1 MB, distinct names 56
+top   1 launches:   1.2% of ops
+top  10 launches:  11.6% of ops
+top  25 launches:  28.8% of ops
+top  50 launches:  57.4% of ops
+top 100 launches:  94.0% of ops
+top 200 launches:  99.9% of ops
+launches needed for 50% / 90% / 99% of ops: 44 88 132
+ops per launch: median 0.6 Mop, mean 203.0 Mop, max 1130.4 Mop
+  launches with 0e+00-1e+04 ops:   29    0.0% of ops
+  launches with 1e+04-1e+06 ops:  217    0.1% of ops
+  launches with 1e+06-1e+07 ops:   58    0.1% of ops
+  launches with 1e+07-1e+08 ops:   55    2.3% of ops
+  launches with 1e+08-1e+09 ops:   42   14.1% of ops
+  launches with 1e+09-1e+12 ops:   73   83.3% of ops
+heaviest kernel names (count, total Gop):
+  r_2_16_4_32_2_2_2_4_4_64                       x 27    29.37 Gop
+  r_16_2_4_32_2_2_2_4_256                        x 26    28.80 Gop
+  r_6_16_4_32_2_2_2_3_32                         x 12     3.77 Gop
+  r_6_6_4_32_2_2_2_3_4_32                        x  8     3.63 Gop
+  r_32_4_4_32_2_2_2_4_4_16                       x  3     3.39 Gop
+  r_8_8_4_32_2_2_2_4_128                         x  3     3.32 Gop
+  r_32_4_32_2_2_2_2_512                          x  3     3.32 Gop
+  r_8_8_4_32_2_2_2_4_4_32                        x  3     3.31 Gop
+ops / (lds bytes) overall: 13.6; launches with ops/lds < 2: 341
+
+### driving_tinygrad_small.pkl: 166 launches, 1.720 Gop, lds 1.83 GB, mem 95.7 MB, distinct names 66
+top   1 launches:  13.7% of ops
+top  10 launches:  41.0% of ops
+top  25 launches:  85.1% of ops
+top  50 launches:  96.6% of ops
+top 100 launches:  99.9% of ops
+top 200 launches: 100.0% of ops
+launches needed for 50% / 90% / 99% of ops: 14 30 80
+ops per launch: median 1.1 Mop, mean 10.4 Mop, max 235.3 Mop
+  launches with 0e+00-1e+04 ops:   34    0.0% of ops
+  launches with 1e+04-1e+06 ops:   46    0.6% of ops
+  launches with 1e+06-1e+07 ops:   53    6.8% of ops
+  launches with 1e+07-1e+08 ops:   32   78.9% of ops
+  launches with 1e+08-1e+09 ops:    1   13.7% of ops
+  launches with 1e+09-1e+12 ops:    0    0.0% of ops
+heaviest kernel names (count, total Gop):
+  r_2_24_8_16_4_4_64_4                           x  6     0.31 Gop
+  r_2_8_8_16_4_4_192_4                           x  6     0.30 Gop
+  r_64_2_2_8_16_4_4_6_3_3_4                      x  1     0.24 Gop
+  r_32_6_8_16_4_4_16_4                           x  2     0.11 Gop
+  r_8_12_8_16_4_4_32_4                           x  2     0.10 Gop
+  r_48_8_8_4_4_128_4                             x  2     0.10 Gop
+  r_32_2_8_16_4_4_48_4                           x  2     0.10 Gop
+  r_8_4_8_16_4_4_96_4                            x  2     0.10 Gop
+ops / (lds bytes) overall: 0.9; launches with ops/lds < 2: 165

@@ -136,6 +136,9 @@ def rw_D(gb, cf):
         hist = "feat_hist"
         hidden4 = gb.add("Reshape", [hidden_t, gb.ints([1, 512, 1, 1])], hint="hidden4")
         gb.add("Concat", [hist, hidden4], out="model/tok4", hint="tok4_concat", axis=3)
+        gb.remove(tok)       # keep the old token-major tensor valid until rw_transformer replaces its consumers (then it is dead code)
+        t3 = gb.add("Reshape", ["model/tok4", gb.ints([1, 512, 9])], hint="tok3")
+        gb.add("Transpose", [t3], out="model/p_index", hint="tok_major", perm=[0, 2, 1])
         hist_info = ("feat_hist", [1, 512, 1, 8])
         gb.tok4 = "model/tok4"
     else:
@@ -145,9 +148,10 @@ def rw_D(gb, cf):
     # ---- desire queue
     if cf:
         dq = ("desire_q", [1, 200, 4, 1])
-        gb.remove(gb.one(out="model/p_view"))   # the old Reshape that produced p_view
-        gb.add("ReduceMax", ["desire_q", gb.ints([2])], out="model/p_view", hint="desire_max", keepdims=1)
-        gb.four.add("model/p_view")
+        gb.remove(gb.one(out="model/p_view"))   # the old Reshape that produced p_view [1,200]
+        dq4 = gb.add("ReduceMax", ["desire_q", gb.ints([2])], hint="desire_max", keepdims=1)       # [1,200,1,1]
+        gb.add("Reshape", [dq4, gb.ints([1, 200])], out="model/p_view", hint="desire_flat")          # no-op; dropped by rw_C_fc
+        gb.four.add(dq4)
     else:
         dq = ("desire_q", [1, 25, 4, 8])
         gb.remove(gb.find(op="Transpose", out="transpose")[0])
@@ -175,6 +179,9 @@ def rw_E_simple(gb, keep_next_states=True):
     E5  layer_scale: Conv -> Mul(gamma per channel): gamma folded into that conv's weights and bias (12 Mul nodes).
         Float32 rounding level, not bit-identical (w*gamma is a new rounding).
     E6  next_state_feat_q's new row is sliced out of `outputs` again; use the feature vector that `outputs` was built from.
+    E7  Mul(Gemm output, per-feature constant): the constant is folded into the Gemm rows (2 nodes). Rounding level.
+    E8  `hidden` = vision_outputs[:, 1064:1576] is exactly the last piece of the Concat that built vision_outputs (checked
+        from the widths): use that piece; then the nested Concats that build `outputs` become one Concat. Bit-identical.
     """
     for n in list(gb.find(op="Cast")):
         assert gb.attr(n, "to") == TensorProto.FLOAT
@@ -205,12 +212,47 @@ def rw_E_simple(gb, keep_next_states=True):
             gb.remove(n)
             folded += 1
     assert folded == 12, folded
+    # E7: Mul(Gemm output, constant per-feature scale) -> scale folded into the Gemm's rows
+    folded7 = 0
+    for n in list(gb.find(op="Mul")):
+        if n.input[1] in gb.init and gb.init[n.input[1]].ndim == 1:
+            gm = gb.producer(n.input[0])
+            if gm is None or gm.op_type != "Gemm" or len(gb.consumers(gm.output[0])) != 1:
+                continue
+            sc = gb.init[n.input[1]].astype(np.float64)
+            w, b = gb.init[gm.input[1]].astype(np.float64), gb.init[gm.input[2]].astype(np.float64)
+            assert w.shape[0] == sc.shape[0]
+            gb.init[gm.input[1] + "/sc"] = (w * sc[:, None]).astype(np.float32)
+            gb.init[gm.input[2] + "/sc"] = (b * sc).astype(np.float32)
+            gm.input[1], gm.input[2] = gm.input[1] + "/sc", gm.input[2] + "/sc"
+            gb.replace_uses(n.output[0], gm.output[0])
+            gb.remove(n)
+            folded7 += 1
+    assert folded7 == 2, folded7
+    # E8: hidden = vision_outputs[:, 1064:1576] is exactly the last input of the Concat that built vision_outputs; then the
+    # two Concats feeding `outputs` are one Concat.
+    vo = gb.one(out="model/vision_outputs")
+    shp = gb.shapes()
+    widths = [shp[x][1] for x in vo.input]
+    hs = gb.one(out="model/hidden")
+    assert hs.op_type == "Slice" and gb.init[hs.input[1]].tolist() == [sum(widths[:-1])] and gb.init[hs.input[2]].tolist() == [sum(widths)] and widths[-1] == 512
+    gb.replace_uses("model/hidden", vo.input[-1]); gb.remove(hs)
+    fin = [n for n in gb.nodes if n.op_type == "Concat" and "model/vision_outputs" in n.input]
+    assert len(fin) == 1 and len(gb.consumers("model/vision_outputs")) == 1
+    pos = list(fin[0].input).index("model/vision_outputs")
+    pout = gb.producer(fin[0].input[1 - pos]) if fin[0].input[1 - pos] != "model/vision_outputs" else None
+    ins = list(fin[0].input)
+    ins[pos:pos + 1] = list(vo.input)
+    if pout is not None and pout.op_type == "Concat" and len(gb.consumers(pout.output[0])) == 1:
+        k = ins.index(pout.output[0]); ins[k:k + 1] = list(pout.input); gb.remove(pout)
+    del fin[0].input[:]; fin[0].input.extend(ins)
+    gb.remove(vo)
     if any(o.name == "next_state_feat_q" for o in gb.outputs):
         cat = gb.one(out="next_state_feat_q")
         assert cat.input[1] == "unsqueeze_1"
         cat.input[1] = "model/hidden_t"
     gb.invalidate_shapes()
-    gb.log.append("E1-E6 no-op/cast/identity/clip/expand removal, layer_scale folded (12), next_state_feat row from hidden")
+    gb.log.append("E1-E8 no-op removal, layer_scale (12) and output scales (2) folded, hidden slice and nested Concats removed")
     return gb
 
 
@@ -332,7 +374,7 @@ def rw_transformer(gb, prune, cf):
         zm = gb.add("Sub", [x, mean], hint=hint + "_zm")
         var = gb.add("ReduceMean", [gb.add("Mul", [zm, zm], hint=hint + "_sq"), ax], hint=hint + "_var", keepdims=1)
         den = gb.add("Sqrt", [gb.add("Add", [var, gb.const(f32(eps), hint + "_eps")], hint=hint + "_ve")], hint=hint + "_sqrt")
-        y = gb.add("Div", [zm, den], hint=hint + "_norm")
+        y = gb.add("Mul", [zm, gb.add("Reciprocal", [den], hint=hint + "_rsqrt")], hint=hint + "_norm")   # Sqrt+Reciprocal = rsqrt (convert_variants.py fuses them)
         return gb.add("Add", [gb.add("Mul", [y, g4], hint=hint + "_scale"), b4], hint=hint + "_shift")
 
     def vec4(name):          # [1,512] -> [1,512,1,1]
@@ -374,11 +416,9 @@ def rw_transformer(gb, prune, cf):
     x2 = gb.add("Add", [x1, conv(f, p(W_mp), p(b_mp), "mproj")], hint="res2")
     for n in gb.find(op="Gather", out="model/p_select"):          # the old Gather that produced p_select
         gb.remove(n)
-    if prune:
-        gb.add("Identity", [x2], out="model/p_select", hint="select4")
-    else:
-        gb.add("Slice", [x2, gb.ints([8]), gb.ints([9]), gb.ints([3])], out="model/p_select", hint="select4")
-    gb.four.add("model/p_select")
+    sel4 = x2 if prune else gb.add("Slice", [x2, gb.ints([8]), gb.ints([9]), gb.ints([3])], hint="select4")   # [1,512,1,1]
+    gb.add("Reshape", [sel4, gb.ints([1, 512])], out="model/p_select", hint="select")                    # no-op; dropped by rw_C_fc
+    gb.four.add(sel4)
     gb.invalidate_shapes()
     gb.log.append(f"transformer rebuilt channel-first (prune={prune})")
     return gb
@@ -401,7 +441,7 @@ def rw_C_fc(gb):
     outs = {o.name for o in gb.outputs}
     n_gemm = 0
     def to4(t):
-        if t in four:
+        if t in four or (t in shp and len(shp[t]) == 4):
             return t
         if t in gb.init:
             a = gb.init[t]
@@ -439,7 +479,8 @@ def rw_C_fc(gb):
         elif op in ("Add", "Mul", "Div", "Sub"):
             n.input[:] = [to4(x) for x in n.input]
             out_nodes.append(n)
-            four.update(n.output)
+            if all(x in four for x in n.input if x not in gb.init and not (x in shp and len(shp[x]) == 0)):
+                four.update(n.output)
         elif op == "Concat":
             assert gb.attr(n, "axis") == 1
             n.input[:] = [to4(x) for x in n.input]
@@ -468,10 +509,8 @@ def rw_C_fc(gb):
             vec = len(tgt) <= 3 and int(np.prod(tgt)) == nsrc and tgt[-1] == nsrc and all(d == 1 for d in tgt[:-1])
             if vec and op == "Reshape" and len(tgt) == 2:
                 gb.replace_uses(n.output[0], n.input[0])                 # [1,C,1,1] -> [1,C]: stay 4D
-            elif vec and op == "Reshape" and len(tgt) == 4 and tgt[1] == nsrc:
+            elif op == "Reshape" and len(tgt) == 4 and tgt[0] == 1 and tgt[1] == nsrc and tgt[2] == tgt[3] == 1:
                 gb.replace_uses(n.output[0], n.input[0])                 # [1,C] -> [1,C,1,1]: already there
-            elif vec and op == "Unsqueeze":
-                gb.replace_uses(n.output[0], n.input[0])
             else:
                 n.input[0] = back(n.input[0]) if n.input[0] in four and len(shp[n.input[0]]) == 2 else n.input[0]
                 out_nodes.append(n)

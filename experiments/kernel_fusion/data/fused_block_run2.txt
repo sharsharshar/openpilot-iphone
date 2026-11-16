@@ -1,0 +1,14 @@
+== stage0.block0: C=64 hidden=192 pixels=2048  MACs=50.3M  hidden tensor 1.57 MB (fp32)  tile scratch 12 KiB
+    tg                    8.504 ms    11.8 GFLOP/s  (2 kernels)
+    ort_opt_off           1.480 ms    68.0 GFLOP/s
+    ort_opt_all           1.183 ms    85.1 GFLOP/s
+    c_unfused_5pass       3.042 ms    33.1 GFLOP/s
+    c_epilogue_2pass      2.593 ms    38.8 GFLOP/s
+    c_fused_1pass         1.612 ms    62.4 GFLOP/s
+== stage2.block0: C=256 hidden=768 pixels=128  MACs=50.3M  hidden tensor 0.39 MB (fp32)  tile scratch 48 KiB
+    tg                    5.648 ms    17.8 GFLOP/s  (2 kernels)
+    ort_opt_off           0.846 ms   119.0 GFLOP/s
+    ort_opt_all           0.805 ms   125.0 GFLOP/s
+    c_unfused_5pass       1.553 ms    64.8 GFLOP/s
+    c_epilogue_2pass      1.570 ms    64.1 GFLOP/s
+    c_fused_1pass         1.418 ms    71.0 GFLOP/s
