@@ -44,3 +44,17 @@ def raw_diff(a, b, sl):
 
 def load_ref(path):
     d = np.load(path); return {k: d[k] for k in ("frames", "desire", "traffic_convention", "action_t", "outputs")}
+
+# ---- camera configuration (copy of openpilot common/transformations/camera.py DEVICE_CAMERAS, narrow/wide road cameras only)
+# (width, height, narrow focal length, wide focal length); principal point is the frame centre.
+_AR_OX = (1928, 1208, 2648.0, 567.0)
+_OS = (2688 // 2, 1520 // 2, 1522.0 * 3 / 4, 567.0 / 4 * 3)
+def camera_config(device, sensor, init_device="unknown"):
+    """(width, height, f_narrow, f_wide, key) for the device type and sensor from the log, as openpilot's DEVICE_CAMERAS."""
+    if sensor == "os04c10": return _OS + (("mici/tici/tizi", sensor),)
+    if sensor in ("ar0231", "ox03c10"): return _AR_OX + (((device if device != "unknown" else init_device), sensor),)
+    if sensor == "unknown" and (device in ("tici", "unknown") and init_device in ("tici", "unknown")): return _AR_OX + (("tici", "unknown"),)  # AR0231, field added later
+    raise ValueError(f"no camera config for device {device!r} sensor {sensor!r}")
+
+def intrinsics(w, h, f):
+    return np.array([[f, 0, w / 2], [0, f, h / 2], [0, 0, 1]])

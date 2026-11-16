@@ -1,0 +1,378 @@
+idx,name,op,kind,stage,out_shape,out_elems,out_bytes_f32,weight_bytes,macs,us_median,us_min
+0,node_slice_1,Slice,Slice,"state/input prep (slice, gather, cast, concat)",2x4x6x128x256,1572864,6291456,32,0,273.5,240
+1,node_unsqueeze,Unsqueeze,Unsqueeze,"state/input prep (slice, gather, cast, concat)",2x1x6x128x256,393216,1572864,8,0,9.5,7
+2,node_cat,Concat,Concat,"state/input prep (slice, gather, cast, concat)",2x5x6x128x256,1966080,7864320,0,0,339.0,292
+3,node_view,Reshape,Reshape,"state/input prep (slice, gather, cast, concat)",1x1x8,8,32,24,0,6.0,5
+4,node_slice_2,Slice,Slice,"state/input prep (slice, gather, cast, concat)",99x1x8,792,3168,32,0,12.0,10
+5,node_cat_1,Concat,Concat,"state/input prep (slice, gather, cast, concat)",100x1x8,800,3200,0,0,12.0,11
+6,node_select,Gather,Gather,"state/input prep (slice, gather, cast, concat)",5x6x128x256,983040,3932160,8,0,104.5,93
+7,node_slice_3,Slice,Slice,"state/input prep (slice, gather, cast, concat)",2x6x128x256,393216,1572864,32,0,35.0,30
+8,node__unsafe_view,Reshape,Reshape,"state/input prep (slice, gather, cast, concat)",1x12x128x256,393216,1572864,32,0,7.0,5
+9,node_select_1,Gather,Gather,"state/input prep (slice, gather, cast, concat)",5x6x128x256,983040,3932160,8,0,118.0,108
+10,node_slice_4,Slice,Slice,"state/input prep (slice, gather, cast, concat)",2x6x128x256,393216,1572864,32,0,41.0,33
+11,node__unsafe_view_1,Reshape,Reshape,"state/input prep (slice, gather, cast, concat)",1x12x128x256,393216,1572864,32,0,8.0,7
+12,node_view_1,Reshape,Reshape,"state/input prep (slice, gather, cast, concat)",25x4x1x8,800,3200,32,0,6.0,5
+13,n0,ReduceMax,ReduceMax,"state/input prep (slice, gather, cast, concat)",25x1x8,200,800,8,0,9.0,8
+14,node_transpose,Transpose,Transpose,"state/input prep (slice, gather, cast, concat)",1x25x8,200,800,0,0,4.0,3
+15,node_slice_5,Slice,Slice,"state/input prep (slice, gather, cast, concat)",24x1x512,12288,49152,32,0,16.0,14
+16,node_transpose_1,Transpose,Transpose,"state/input prep (slice, gather, cast, concat)",1x24x512,12288,49152,0,0,8.0,7
+17,node__to_copy,Cast,Cast,"state/input prep (slice, gather, cast, concat)",1x25x8,200,800,0,0,3.0,3
+18,node__to_copy_1,Cast,Cast,"state/input prep (slice, gather, cast, concat)",1x24x512,12288,49152,0,0,3.0,3
+19,node__to_copy_2,Cast,Cast,"state/input prep (slice, gather, cast, concat)",1x2,2,8,0,0,4.0,4
+20,node__to_copy_3,Cast,Cast,"state/input prep (slice, gather, cast, concat)",1x2,2,8,0,0,3.0,3
+21,model/node__to_copy,Cast,Cast,"state/input prep (slice, gather, cast, concat)",1x12x128x256,393216,1572864,0,0,277.5,221
+22,model/node__to_copy_1,Cast,Cast,"state/input prep (slice, gather, cast, concat)",1x12x128x256,393216,1572864,0,0,255.5,212
+23,model/node_cat,Concat,Concat,"state/input prep (slice, gather, cast, concat)",1x24x128x256,786432,3145728,0,0,475.5,416
+24,model/node_sub,Sub,Sub,"input normalisation (Sub, Div)",1x24x128x256,786432,3145728,96,0,417.0,346
+25,model/node_div,Div,Div,"input normalisation (Sub, Div)",1x24x128x256,786432,3145728,96,0,323.5,271
+26,model/node_conv2d,Conv,Conv dense 3x3,encoder stem,1x64x64x128,524288,2097152,55552,113246208,3669.5,3528
+27,model/node_gelu,Gelu,Gelu,encoder stem,1x64x64x128,524288,2097152,0,0,481.0,433
+28,model/node_conv2d_1,Conv,Conv depthwise 3x3,encoder stem,1x64x32x64,131072,524288,2560,1179648,847.0,765
+29,model/node_gelu_1,Gelu,Gelu,encoder stem,1x64x32x64,131072,524288,0,0,101.5,93
+30,model/node_conv2d_2,Conv,Conv 1x1,encoder stem,1x64x32x64,131072,524288,16640,8388608,178.5,165
+31,model/node_gelu_2,Gelu,Gelu,encoder stem,1x64x32x64,131072,524288,0,0,84.5,76
+32,model/node_conv2d_3,Conv,Conv depthwise 3x3,encoder stage 0,1x64x32x64,131072,524288,2560,1179648,286.0,256
+33,model/node_Conv_173,Conv,Conv depthwise 7x7,encoder stage 0,1x64x32x64,131072,524288,12800,6422528,1592.5,1436
+34,model/node_conv2d_5,Conv,Conv 1x1,encoder stage 0,1x192x32x64,393216,1572864,49920,25165824,508.0,448
+35,model/node_gelu_3,Gelu,Gelu,encoder stage 0,1x192x32x64,393216,1572864,0,0,376.5,326
+36,model/node_conv2d_6,Conv,Conv 1x1,encoder stage 0,1x64x32x64,131072,524288,49408,25165824,718.5,631
+37,model/node_mul,Mul,Mul,encoder stage 0,1x64x32x64,131072,524288,256,0,66.0,58
+38,model/node_add,Add,Add,encoder stage 0,1x64x32x64,131072,524288,0,0,45.0,38
+39,model/node_conv2d_7,Conv,Conv depthwise 3x3,encoder stage 0,1x64x32x64,131072,524288,2560,1179648,295.0,264
+40,model/node_Conv_175,Conv,Conv depthwise 7x7,encoder stage 0,1x64x32x64,131072,524288,12800,6422528,1479.5,1423
+41,model/node_conv2d_9,Conv,Conv 1x1,encoder stage 0,1x192x32x64,393216,1572864,49920,25165824,520.5,476
+42,model/node_gelu_4,Gelu,Gelu,encoder stage 0,1x192x32x64,393216,1572864,0,0,338.0,292
+43,model/node_conv2d_10,Conv,Conv 1x1,encoder stage 0,1x64x32x64,131072,524288,49408,25165824,655.5,542
+44,model/node_mul_1,Mul,Mul,encoder stage 0,1x64x32x64,131072,524288,256,0,44.5,41
+45,model/node_add_1,Add,Add,encoder stage 0,1x64x32x64,131072,524288,0,0,46.0,39
+46,model/node_conv2d_11,Conv,Conv grouped 7x7,encoder stage 1,1x128x16x32,65536,262144,25600,3211264,664.5,616
+47,model/node_conv2d_12,Conv,Conv 1x1,encoder stage 1,1x128x16x32,65536,262144,66048,8388608,157.5,144
+48,model/node_gelu_5,Gelu,Gelu,encoder stage 1,1x128x16x32,65536,262144,0,0,44.0,40
+49,model/node_conv2d_13,Conv,Conv depthwise 3x3,encoder stage 1,1x128x16x32,65536,262144,5120,589824,165.0,160
+50,model/node_Conv_177,Conv,Conv depthwise 7x7,encoder stage 1,1x128x16x32,65536,262144,25600,3211264,937.5,898
+51,model/node_conv2d_15,Conv,Conv 1x1,encoder stage 1,1x384x16x32,196608,786432,198144,25165824,441.0,397
+52,model/node_gelu_6,Gelu,Gelu,encoder stage 1,1x384x16x32,196608,786432,0,0,134.5,122
+53,model/node_conv2d_16,Conv,Conv 1x1,encoder stage 1,1x128x16x32,65536,262144,197120,25165824,472.5,418
+54,model/node_mul_2,Mul,Mul,encoder stage 1,1x128x16x32,65536,262144,512,0,29.0,25
+55,model/node_add_2,Add,Add,encoder stage 1,1x128x16x32,65536,262144,0,0,20.0,17
+56,model/node_conv2d_17,Conv,Conv depthwise 3x3,encoder stage 1,1x128x16x32,65536,262144,5120,589824,167.0,160
+57,model/node_Conv_179,Conv,Conv depthwise 7x7,encoder stage 1,1x128x16x32,65536,262144,25600,3211264,938.5,904
+58,model/node_conv2d_19,Conv,Conv 1x1,encoder stage 1,1x384x16x32,196608,786432,198144,25165824,443.5,409
+59,model/node_gelu_7,Gelu,Gelu,encoder stage 1,1x384x16x32,196608,786432,0,0,130.0,121
+60,model/node_conv2d_20,Conv,Conv 1x1,encoder stage 1,1x128x16x32,65536,262144,197120,25165824,483.0,420
+61,model/node_mul_3,Mul,Mul,encoder stage 1,1x128x16x32,65536,262144,512,0,27.0,23
+62,model/node_add_3,Add,Add,encoder stage 1,1x128x16x32,65536,262144,0,0,20.0,18
+63,model/node_conv2d_21,Conv,Conv grouped 7x7,encoder stage 2,1x256x8x16,32768,131072,51200,1605632,425.5,387
+64,model/node_conv2d_22,Conv,Conv 1x1,encoder stage 2,1x256x8x16,32768,131072,263168,8388608,166.0,153
+65,model/node_gelu_8,Gelu,Gelu,encoder stage 2,1x256x8x16,32768,131072,0,0,25.5,22
+66,model/node_conv2d_23,Conv,Conv depthwise 3x3,encoder stage 2,1x256x8x16,32768,131072,10240,294912,134.5,131
+67,model/node_Conv_181,Conv,Conv depthwise 7x7,encoder stage 2,1x256x8x16,32768,131072,51200,1605632,732.5,701
+68,model/node_conv2d_25,Conv,Conv 1x1,encoder stage 2,1x768x8x16,98304,393216,789504,25165824,473.5,428
+69,model/node_gelu_9,Gelu,Gelu,encoder stage 2,1x768x8x16,98304,393216,0,0,67.5,62
+70,model/node_conv2d_26,Conv,Conv 1x1,encoder stage 2,1x256x8x16,32768,131072,787456,25165824,452.5,391
+71,model/node_mul_4,Mul,Mul,encoder stage 2,1x256x8x16,32768,131072,1024,0,20.0,16
+72,model/node_add_4,Add,Add,encoder stage 2,1x256x8x16,32768,131072,0,0,12.5,10
+73,model/node_conv2d_27,Conv,Conv depthwise 3x3,encoder stage 2,1x256x8x16,32768,131072,10240,294912,138.0,128
+74,model/node_Conv_183,Conv,Conv depthwise 7x7,encoder stage 2,1x256x8x16,32768,131072,51200,1605632,735.5,691
+75,model/node_conv2d_29,Conv,Conv 1x1,encoder stage 2,1x768x8x16,98304,393216,789504,25165824,474.0,421
+76,model/node_gelu_10,Gelu,Gelu,encoder stage 2,1x768x8x16,98304,393216,0,0,68.5,63
+77,model/node_conv2d_30,Conv,Conv 1x1,encoder stage 2,1x256x8x16,32768,131072,787456,25165824,458.5,398
+78,model/node_mul_5,Mul,Mul,encoder stage 2,1x256x8x16,32768,131072,1024,0,20.0,16
+79,model/node_add_5,Add,Add,encoder stage 2,1x256x8x16,32768,131072,0,0,12.0,10
+80,model/node_conv2d_31,Conv,Conv depthwise 3x3,encoder stage 2,1x256x8x16,32768,131072,10240,294912,136.5,128
+81,model/node_Conv_185,Conv,Conv depthwise 7x7,encoder stage 2,1x256x8x16,32768,131072,51200,1605632,731.5,680
+82,model/node_conv2d_33,Conv,Conv 1x1,encoder stage 2,1x768x8x16,98304,393216,789504,25165824,464.5,431
+83,model/node_gelu_11,Gelu,Gelu,encoder stage 2,1x768x8x16,98304,393216,0,0,69.0,64
+84,model/node_conv2d_34,Conv,Conv 1x1,encoder stage 2,1x256x8x16,32768,131072,787456,25165824,452.5,391
+85,model/node_mul_6,Mul,Mul,encoder stage 2,1x256x8x16,32768,131072,1024,0,19.0,17
+86,model/node_add_6,Add,Add,encoder stage 2,1x256x8x16,32768,131072,0,0,12.0,10
+87,model/node_conv2d_35,Conv,Conv depthwise 3x3,encoder stage 2,1x256x8x16,32768,131072,10240,294912,136.0,132
+88,model/node_Conv_187,Conv,Conv depthwise 7x7,encoder stage 2,1x256x8x16,32768,131072,51200,1605632,732.0,688
+89,model/node_conv2d_37,Conv,Conv 1x1,encoder stage 2,1x768x8x16,98304,393216,789504,25165824,463.0,427
+90,model/node_gelu_12,Gelu,Gelu,encoder stage 2,1x768x8x16,98304,393216,0,0,68.0,63
+91,model/node_conv2d_38,Conv,Conv 1x1,encoder stage 2,1x256x8x16,32768,131072,787456,25165824,441.0,385
+92,model/node_mul_7,Mul,Mul,encoder stage 2,1x256x8x16,32768,131072,1024,0,19.5,15
+93,model/node_add_7,Add,Add,encoder stage 2,1x256x8x16,32768,131072,0,0,12.0,10
+94,model/node_conv2d_39,Conv,Conv depthwise 3x3,encoder stage 2,1x256x8x16,32768,131072,10240,294912,140.0,132
+95,model/node_Conv_189,Conv,Conv depthwise 7x7,encoder stage 2,1x256x8x16,32768,131072,51200,1605632,727.5,678
+96,model/node_conv2d_41,Conv,Conv 1x1,encoder stage 2,1x768x8x16,98304,393216,789504,25165824,459.5,413
+97,model/node_gelu_13,Gelu,Gelu,encoder stage 2,1x768x8x16,98304,393216,0,0,68.5,60
+98,model/node_conv2d_42,Conv,Conv 1x1,encoder stage 2,1x256x8x16,32768,131072,787456,25165824,457.5,394
+99,model/node_mul_8,Mul,Mul,encoder stage 2,1x256x8x16,32768,131072,1024,0,19.0,14
+100,model/node_add_8,Add,Add,encoder stage 2,1x256x8x16,32768,131072,0,0,12.0,10
+101,model/node_conv2d_43,Conv,Conv depthwise 3x3,encoder stage 2,1x256x8x16,32768,131072,10240,294912,137.0,127
+102,model/node_Conv_191,Conv,Conv depthwise 7x7,encoder stage 2,1x256x8x16,32768,131072,51200,1605632,727.0,698
+103,model/node_conv2d_45,Conv,Conv 1x1,encoder stage 2,1x768x8x16,98304,393216,789504,25165824,471.0,415
+104,model/node_gelu_14,Gelu,Gelu,encoder stage 2,1x768x8x16,98304,393216,0,0,68.5,61
+105,model/node_conv2d_46,Conv,Conv 1x1,encoder stage 2,1x256x8x16,32768,131072,787456,25165824,446.5,397
+106,model/node_mul_9,Mul,Mul,encoder stage 2,1x256x8x16,32768,131072,1024,0,19.0,15
+107,model/node_add_9,Add,Add,encoder stage 2,1x256x8x16,32768,131072,0,0,12.0,10
+108,model/node_conv2d_47,Conv,Conv grouped 7x7,encoder stage 3,1x512x4x8,16384,65536,102400,802816,279.0,241
+109,model/node_conv2d_48,Conv,Conv 1x1,encoder stage 3,1x512x4x8,16384,65536,1050624,8388608,200.0,153
+110,model/node_gelu_15,Gelu,Gelu,encoder stage 3,1x512x4x8,16384,65536,0,0,18.0,13
+111,model/node_conv2d_49,Conv,Conv depthwise 3x3,encoder stage 3,1x512x4x8,16384,65536,20480,147456,117.5,113
+112,model/node_Conv_193,Conv,Conv depthwise 7x7,encoder stage 3,1x512x4x8,16384,65536,102400,802816,592.5,542
+113,model/node_conv2d_51,Conv,Conv 1x1,encoder stage 3,1x1536x4x8,49152,196608,3151872,25165824,604.5,519
+114,model/node_gelu_16,Gelu,Gelu,encoder stage 3,1x1536x4x8,49152,196608,0,0,40.0,36
+115,model/node_conv2d_52,Conv,Conv 1x1,encoder stage 3,1x512x4x8,16384,65536,3147776,25165824,506.0,453
+116,model/node_mul_10,Mul,Mul,encoder stage 3,1x512x4x8,16384,65536,2048,0,21.5,17
+117,model/node_add_10,Add,Add,encoder stage 3,1x512x4x8,16384,65536,0,0,9.0,8
+118,model/node_conv2d_53,Conv,Conv depthwise 3x3,encoder stage 3,1x512x4x8,16384,65536,20480,147456,126.0,112
+119,model/node_Conv_195,Conv,Conv depthwise 7x7,encoder stage 3,1x512x4x8,16384,65536,102400,802816,595.0,562
+120,model/node_conv2d_55,Conv,Conv 1x1,encoder stage 3,1x1536x4x8,49152,196608,3151872,25165824,587.0,440
+121,model/node_gelu_17,Gelu,Gelu,encoder stage 3,1x1536x4x8,49152,196608,0,0,40.0,36
+122,model/node_conv2d_56,Conv,Conv 1x1,encoder stage 3,1x512x4x8,16384,65536,3147776,25165824,504.5,443
+123,model/node_mul_11,Mul,Mul,encoder stage 3,1x512x4x8,16384,65536,2048,0,20.0,17
+124,model/node_add_11,Add,Add,encoder stage 3,1x512x4x8,16384,65536,0,0,9.0,8
+125,model/node_conv2d_57,Conv,Conv grouped 3x3,encoder final conv+SE+pool,1x1024x4x8,32768,131072,40960,294912,201.0,177
+126,model/node_mean,ReduceMean,ReduceMean,encoder final conv+SE+pool,1x1024x1x1,1024,4096,16,0,20.0,16
+127,model/node_conv2d_58,Conv,Conv 1x1,encoder final conv+SE+pool,1x64x1x1,64,256,262400,65536,31.0,26
+128,model/node_relu,Relu,Relu,encoder final conv+SE+pool,1x64x1x1,64,256,0,0,5.0,4
+129,model/node_conv2d_59,Conv,Conv 1x1,encoder final conv+SE+pool,1x1024x1x1,1024,4096,266240,65536,31.0,27
+130,model/node_sigmoid,Sigmoid,Sigmoid,encoder final conv+SE+pool,1x1024x1x1,1024,4096,0,0,5.0,4
+131,model/node_mul_12,Mul,Mul,encoder final conv+SE+pool,1x1024x4x8,32768,131072,0,0,18.0,16
+132,model/node_gelu_18,Gelu,Gelu,encoder final conv+SE+pool,1x1024x4x8,32768,131072,0,0,21.0,20
+133,model/node_mean_1,ReduceMean,ReduceMean,encoder final conv+SE+pool,1x1024x1x1,1024,4096,16,0,9.0,8
+134,model/node_view,Reshape,Reshape,encoder final conv+SE+pool,1x1024,1024,4096,16,0,5.0,4
+135,model/node_linear,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x2048,2048,8192,8396800,2097152,719.0,597
+136,model/node_linear_1,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,4196352,1048576,351.5,296
+137,model/node_relu_1,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,8.5,6
+138,model/node_linear_2,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,170.0,152
+139,model/node_relu_2,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,6.0,4
+140,model/node_linear_3,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,175.5,151
+141,model/node_add_12,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,8.0,6
+142,model/node_relu_3,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,4.0,3
+143,model/node_linear_4,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,169.0,144
+144,model/node_relu_4,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,5.0,3
+145,model/node_linear_5,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,179.5,148
+146,model/node_add_13,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,7.0,5
+147,model/node_relu_5,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,4.0,3
+148,model/node_linear_6,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,1050624,262144,80.0,74
+149,model/node_linalg_vector_norm,ReduceL2,ReduceL2,per-frame heads (vision policy + no_bottleneck + summarizer),1x1,1,4,8,0,12.0,10
+150,model/node_clamp_min,Clip,Clip,per-frame heads (vision policy + no_bottleneck + summarizer),1x1,1,4,4,0,6.0,5
+151,model/node_expand,Expand,Expand,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,16,0,7.0,6
+152,model/node_div_1,Div,Div,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,5.0,4
+153,model/node_linear_7,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,171.0,142
+154,model/node_relu_6,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,5.0,3
+155,model/node_linear_8,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,164.5,149
+156,model/node_add_14,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,7.0,4
+157,model/node_relu_7,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,3.0,2
+158,model/node_linear_9,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,154.0,139
+159,model/node_relu_8,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,4.5,3
+160,model/node_linear_10,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,174.0,145
+161,model/node_add_15,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,7.0,4
+162,model/node_relu_9,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,4.0,3
+163,model/node_linear_12,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,131328,32768,17.0,15
+164,model/node_relu_11,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,3
+165,model/node_linear_13,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,32832,8192,7.0,7
+166,model/node_relu_12,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,0,0,3.0,2
+167,model/node_linear_14,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,32832,8192,8.0,7
+168,model/node_relu_13,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,0,0,3.0,3
+169,model/node_linear_15,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,65664,16384,10.0,9
+170,model/node_relu_14,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+171,model/node_linear_16,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,131328,32768,15.0,14
+172,model/node_relu_15,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,2
+173,model/node_linear_19,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,16640,4096,7.0,6
+174,model/node_relu_18,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,2
+175,model/node_linear_20,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,16640,4096,6.0,5
+176,model/node_add_17,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.5,3
+177,model/node_relu_19,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,2
+178,model/node_linear_21,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,1088,256,5.0,4
+179,model/node_relu_20,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,0,0,3.0,2
+180,model/node_linear_22,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,1088,256,4.5,4
+181,model/node_add_18,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,0,0,3.0,2
+182,model/node_relu_21,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,0,0,3.0,2
+183,model/node_linear_23,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,1088,256,5.0,4
+184,model/node_relu_22,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,0,0,3.0,2
+185,model/node_linear_24,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,1088,256,5.0,4
+186,model/node_add_19,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,0,0,3.0,2
+187,model/node_relu_23,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x16,16,64,0,0,2.5,2
+188,model/node_linear_25,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,5.0,4
+189,model/node_relu_24,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+190,model/node_linear_26,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,5.0,4
+191,model/node_add_20,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+192,model/node_relu_25,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+193,model/node_linear_27,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,16640,4096,6.0,5
+194,model/node_relu_26,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,2.5,2
+195,model/node_linear_28,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,16640,4096,6.0,5
+196,model/node_add_21,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,2
+197,model/node_relu_27,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,2
+198,model/node_linear_30,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x144,144,576,37440,9216,9.0,8
+199,model/node_linear_31,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x3,3,12,204,48,4.0,3
+200,model/node_linear_32,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x8,8,32,544,128,4.5,4
+201,model/node_linear_33,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x264,264,1056,34848,8448,7.5,6
+202,model/node_linear_34,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x528,528,2112,137280,33792,16.0,14
+203,model/node_mul_14,Mul,Mul,per-frame heads (vision policy + no_bottleneck + summarizer),1x144,144,576,576,0,6.0,5
+204,model/node_linear_35,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,4196352,1048576,363.5,297
+205,model/node_relu_28,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,9.0,5
+206,model/node_linear_36,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,178.5,145
+207,model/node_relu_29,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,6.5,4
+208,model/node_linear_37,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,173.0,152
+209,model/node_add_22,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,9.0,6
+210,model/node_relu_30,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,4.0,3
+211,model/node_linear_38,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,170.0,138
+212,model/node_relu_31,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,5.5,3
+213,model/node_linear_39,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,167.5,146
+214,model/node_add_23,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,7.5,5
+215,model/node_relu_32,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,4.0,3
+216,model/node_linear_40,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,170.5,146
+217,model/node_relu_33,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,5.5,3
+218,model/node_linear_41,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,176.0,153
+219,model/node_add_24,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,7.0,4
+220,model/node_relu_34,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,4.0,3
+221,model/node_linear_42,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,163.5,143
+222,model/node_relu_35,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,5.0,3
+223,model/node_linear_43,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,164.0,153
+224,model/node_add_25,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,6.0,4
+225,model/node_relu_36,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,4.0,3
+226,model/node_linear_44,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,131328,32768,14.5,13
+227,model/node_relu_37,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,2
+228,model/node_linear_45,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,65664,16384,9.0,8
+229,model/node_relu_38,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+230,model/node_linear_46,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,65664,16384,10.0,9
+231,model/node_relu_39,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+232,model/node_linear_47,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,65664,16384,10.0,9
+233,model/node_relu_40,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+234,model/node_linear_48,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,65664,16384,12.0,11
+235,model/node_relu_41,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,4.0,3
+236,model/node_linear_50,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,16640,4096,6.0,5
+237,model/node_relu_43,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,2
+238,model/node_linear_51,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,16640,4096,6.0,5
+239,model/node_add_26,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,3
+240,model/node_relu_44,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x64,64,256,0,0,3.0,2
+241,model/node_linear_52,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,5.0,4
+242,model/node_relu_45,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+243,model/node_linear_53,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,5.0,4
+244,model/node_add_27,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+245,model/node_relu_46,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+246,model/node_linear_54,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,5.0,5
+247,model/node_relu_47,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+248,model/node_linear_55,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,5.0,4
+249,model/node_add_28,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,3
+250,model/node_relu_48,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+251,model/node_linear_56,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,6.0,5
+252,model/node_relu_49,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,3
+253,model/node_linear_57,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,5.0,4
+254,model/node_add_29,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+255,model/node_relu_50,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+256,model/node_linear_58,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,7.0,6
+257,model/node_relu_51,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+258,model/node_linear_59,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,5.0,4
+259,model/node_add_30,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,2
+260,model/node_relu_52,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,0,0,3.0,3
+261,model/node_linear_62,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x55,55,220,14300,3520,6.0,5
+262,model/node_linear_63,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x32,32,128,4224,1024,4.0,4
+263,model/node_linear_64,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x12,12,48,1584,384,5.0,4
+264,model/node_linear_65,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x12,12,48,1584,384,5.0,4
+265,model/node_linear_66,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x6,6,24,792,192,6.0,5
+266,model/node_linear_68,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,4196352,1048576,377.0,291
+267,model/node_relu_55,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,10.0,7
+268,model/node_linear_69,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,181.5,149
+269,model/node_relu_56,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,7.0,4
+270,model/node_linear_70,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,163.5,151
+271,model/node_add_32,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,8.5,6
+272,model/node_relu_57,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,4.5,3
+273,model/node_linear_71,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,2101248,524288,172.5,147
+274,model/node_relu_58,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x1024,1024,4096,0,0,6.0,3
+275,model/node_linear_72,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,2099200,524288,169.5,150
+276,model/node_add_33,Add,Add,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,7.0,5
+277,model/node_relu_59,Relu,Relu,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,6.0,4
+278,model/node_linear_73,Gemm,Gemm,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,1050624,262144,85.0,75
+279,model/node_linalg_vector_norm_1,ReduceL2,ReduceL2,per-frame heads (vision policy + no_bottleneck + summarizer),1x1,1,4,8,0,15.0,13
+280,model/node_clamp_min_1,Clip,Clip,per-frame heads (vision policy + no_bottleneck + summarizer),1x1,1,4,4,0,9.0,7
+281,model/node_expand_1,Expand,Expand,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,16,0,9.0,7
+282,model/node_div_2,Div,Div,per-frame heads (vision policy + no_bottleneck + summarizer),1x512,512,2048,0,0,6.0,5
+283,model/node_Concat_171,Concat,Concat,per-frame heads (vision policy + no_bottleneck + summarizer),1x1576,1576,6304,0,0,19.5,17
+284,(unnamed Slice),Slice,Slice,glue (slice/reshape/concat),1x512,512,2048,24,0,15.5,14
+285,(unnamed Reshape),Reshape,Reshape,glue (slice/reshape/concat),1x1x512,512,2048,24,0,5.0,4
+286,(unnamed Concat),Concat,Concat,glue (slice/reshape/concat),1x25x512,12800,51200,0,0,7.5,7
+287,(unnamed Identity),Identity,Identity,glue (slice/reshape/concat),1x25x8,200,800,0,0,4.0,4
+288,(unnamed Identity),Identity,Identity,glue (slice/reshape/concat),1x2,2,8,0,0,4.0,3
+289,(unnamed Identity),Identity,Identity,glue (slice/reshape/concat),1x1576,1576,6304,0,0,5.0,4
+290,model/p_node_Transpose_0,Transpose,Transpose,temporal transformer,25x1x512,12800,51200,0,0,4.0,3
+291,model/p_node_GatherND_7,GatherND,GatherND,temporal transformer,9x1x512,4608,18432,72,0,9.0,8
+292,model/p_node_index,Transpose,Transpose,temporal transformer,1x9x512,4608,18432,0,0,3.0,2
+293,model/p_node_view,Reshape,Reshape,temporal transformer,1x200,200,800,16,0,5.0,4
+294,model/p_node_MatMul_13,MatMul,MatMul,temporal transformer,1x9x512,4608,18432,1048576,2359296,114.0,107
+295,model/p_node_linear,Add,Add,temporal transformer,1x9x512,4608,18432,2048,0,8.0,6
+296,model/p_node_Sigmoid_14,Sigmoid,Sigmoid,temporal transformer,1x9x512,4608,18432,0,0,8.0,6
+297,model/p_node_silu,Mul,Mul,temporal transformer,1x9x512,4608,18432,0,0,4.0,4
+298,model/p_node_MatMul_16,MatMul,MatMul,temporal transformer,1x9x512,4608,18432,1048576,2359296,136.0,115
+299,model/p_node_linear_1,Add,Add,temporal transformer,1x9x512,4608,18432,2048,0,8.5,6
+300,model/p_node_linear_2,Gemm,Gemm,temporal transformer,1x512,512,2048,411648,102400,36.0,33
+301,model/p_node_Sigmoid_17,Sigmoid,Sigmoid,temporal transformer,1x512,512,2048,0,0,5.0,3
+302,model/p_node_silu_1,Mul,Mul,temporal transformer,1x512,512,2048,0,0,3.0,3
+303,model/p_node_linear_3,Gemm,Gemm,temporal transformer,1x512,512,2048,1050624,262144,78.0,73
+304,model/p_node_unsqueeze,Unsqueeze,Unsqueeze,temporal transformer,1x1x512,512,2048,8,0,7.0,6
+305,model/p_node_linear_4,Gemm,Gemm,temporal transformer,1x512,512,2048,6144,1024,7.0,5
+306,model/p_node_Sigmoid_19,Sigmoid,Sigmoid,temporal transformer,1x512,512,2048,0,0,4.0,3
+307,model/p_node_silu_2,Mul,Mul,temporal transformer,1x512,512,2048,0,0,3.0,3
+308,model/p_node_linear_5,Gemm,Gemm,temporal transformer,1x512,512,2048,1050624,262144,84.5,75
+309,model/p_node_unsqueeze_1,Unsqueeze,Unsqueeze,temporal transformer,1x1x512,512,2048,8,0,4.0,3
+310,model/p_node_add,Add,Add,temporal transformer,1x9x512,4608,18432,18432,0,9.0,7
+311,model/p_node_add_1,Add,Add,temporal transformer,1x9x512,4608,18432,0,0,7.0,5
+312,model/p_node_add_2,Add,Add,temporal transformer,1x9x512,4608,18432,0,0,6.0,4
+313,model/p_node_layer_norm,LayerNormalization,LayerNormalization,temporal transformer,1x9x512,4608,18432,4096,0,17.0,15
+314,model/p_node_MatMul_27,MatMul,MatMul,temporal transformer,1x9x1536,13824,55296,3145728,7077888,398.0,329
+315,model/p_node_linear_6,Add,Add,temporal transformer,1x9x1536,13824,55296,6144,0,17.0,13
+316,model/p_node_view_1,Reshape,Reshape,temporal transformer,1x9x3x8x64,13824,55296,40,0,6.0,5
+317,model/p_node_permute,Transpose,Transpose,temporal transformer,3x1x8x9x64,13824,55296,0,0,9.0,8
+318,model/p_node_Slice_38,Slice,Slice,temporal transformer,1x1x8x9x64,4608,18432,24,0,4.0,3
+319,model/p_node_unbind__0,Squeeze,Squeeze,temporal transformer,1x8x9x64,4608,18432,8,0,3.0,3
+320,model/p_node_Slice_42,Slice,Slice,temporal transformer,1x1x8x9x64,4608,18432,24,0,11.0,9
+321,model/p_node_unbind__1,Squeeze,Squeeze,temporal transformer,1x8x9x64,4608,18432,8,0,6.0,5
+322,model/p_node_Slice_46,Slice,Slice,temporal transformer,1x1x8x9x64,4608,18432,24,0,5.0,5
+323,model/p_node_unbind__2,Squeeze,Squeeze,temporal transformer,1x8x9x64,4608,18432,8,0,3.0,2
+324,model/p_node_transpose,Transpose,Transpose,temporal transformer,1x8x64x9,4608,18432,0,0,6.0,5
+325,model/p_node_matmul,MatMul,MatMul,temporal transformer,1x8x9x9,648,2592,0,41472,15.0,13
+326,model/p_node_mul,Mul,Mul,temporal transformer,1x8x9x9,648,2592,4,0,6.0,6
+327,model/p_node_masked_fill,Where,Where,temporal transformer,1x8x9x9,648,2592,85,0,17.0,14
+328,model/p_node_softmax,Softmax,Softmax,temporal transformer,1x8x9x9,648,2592,0,0,15.5,14
+329,model/p_node_matmul_1,MatMul,MatMul,temporal transformer,1x8x9x64,4608,18432,0,41472,8.5,7
+330,model/p_node_transpose_1,Transpose,Transpose,temporal transformer,1x9x8x64,4608,18432,0,0,7.5,7
+331,model/p_node_view_2,Reshape,Reshape,temporal transformer,1x9x512,4608,18432,24,0,5.0,4
+332,model/p_node_MatMul_56,MatMul,MatMul,temporal transformer,1x9x512,4608,18432,1048576,2359296,117.0,108
+333,model/p_node_linear_7,Add,Add,temporal transformer,1x9x512,4608,18432,2048,0,7.0,6
+334,model/p_node_add_3,Add,Add,temporal transformer,1x9x512,4608,18432,0,0,5.0,5
+335,model/p_node_layer_norm_1,LayerNormalization,LayerNormalization,temporal transformer,1x9x512,4608,18432,4096,0,11.0,10
+336,model/p_node_MatMul_58,MatMul,MatMul,temporal transformer,1x9x2048,18432,73728,4194304,9437184,521.5,444
+337,model/p_node_linear_8,Add,Add,temporal transformer,1x9x2048,18432,73728,8192,0,21.0,16
+338,model/p_node_gelu,Gelu,Gelu,temporal transformer,1x9x2048,18432,73728,0,0,16.0,15
+339,model/p_node_MatMul_60,MatMul,MatMul,temporal transformer,1x9x512,4608,18432,4194304,9437184,532.0,475
+340,model/p_node_linear_9,Add,Add,temporal transformer,1x9x512,4608,18432,2048,0,13.0,10
+341,model/p_node_add_4,Add,Add,temporal transformer,1x9x512,4608,18432,0,0,8.0,6
+342,model/p_node_select,Gather,Gather,temporal heads + output concat,1x512,512,2048,8,0,8.5,7
+343,model/p_node_linear_10,Gemm,Gemm,temporal heads + output concat,1x1024,1024,4096,2101248,524288,171.0,140
+344,model/p_node_relu,Relu,Relu,temporal heads + output concat,1x1024,1024,4096,0,0,6.5,5
+345,model/p_node_linear_11,Gemm,Gemm,temporal heads + output concat,1x512,512,2048,2099200,524288,160.0,147
+346,model/p_node_add_5,Add,Add,temporal heads + output concat,1x512,512,2048,0,0,7.0,5
+347,model/p_node_relu_1,Relu,Relu,temporal heads + output concat,1x512,512,2048,0,0,4.0,3
+348,model/p_node_linear_12,Gemm,Gemm,temporal heads + output concat,1x1024,1024,4096,2101248,524288,167.0,144
+349,model/p_node_relu_2,Relu,Relu,temporal heads + output concat,1x1024,1024,4096,0,0,5.5,4
+350,model/p_node_linear_13,Gemm,Gemm,temporal heads + output concat,1x512,512,2048,2099200,524288,163.5,143
+351,model/p_node_add_6,Add,Add,temporal heads + output concat,1x512,512,2048,0,0,8.0,5
+352,model/p_node_relu_3,Relu,Relu,temporal heads + output concat,1x512,512,2048,0,0,4.0,3
+353,model/p_node_linear_14,Gemm,Gemm,temporal heads + output concat,1x256,256,1024,525312,131072,47.5,42
+354,model/p_node_relu_4,Relu,Relu,temporal heads + output concat,1x256,256,1024,0,0,3.0,3
+355,model/p_node_linear_15,Gemm,Gemm,temporal heads + output concat,1x32,32,128,65664,16384,10.0,9
+356,model/p_node_relu_5,Relu,Relu,temporal heads + output concat,1x32,32,128,0,0,4.0,3
+357,model/p_node_linear_16,Gemm,Gemm,temporal heads + output concat,1x256,256,1024,263168,65536,26.0,23
+358,model/p_node_relu_6,Relu,Relu,temporal heads + output concat,1x256,256,1024,0,0,3.0,3
+359,model/p_node_linear_17,Gemm,Gemm,temporal heads + output concat,1x256,256,1024,263168,65536,24.0,22
+360,model/p_node_add_7,Add,Add,temporal heads + output concat,1x256,256,1024,0,0,5.0,3
+361,model/p_node_relu_7,Relu,Relu,temporal heads + output concat,1x256,256,1024,0,0,2.0,2
+362,model/p_node_linear_18,Gemm,Gemm,temporal heads + output concat,1x32,32,128,4224,1024,5.0,4
+363,model/p_node_relu_8,Relu,Relu,temporal heads + output concat,1x32,32,128,0,0,3.0,2
+364,model/p_node_linear_19,Gemm,Gemm,temporal heads + output concat,1x32,32,128,4224,1024,5.0,4
+365,model/p_node_add_8,Add,Add,temporal heads + output concat,1x32,32,128,0,0,4.0,3
+366,model/p_node_relu_9,Relu,Relu,temporal heads + output concat,1x32,32,128,0,0,2.0,2
+367,model/p_node_linear_20,Gemm,Gemm,temporal heads + output concat,1x990,990,3960,1017720,253440,76.0,69
+368,model/p_node_linear_21,Gemm,Gemm,temporal heads + output concat,1x8,8,32,1056,256,6.0,5
+369,model/p_node_mul_1,Mul,Mul,temporal heads + output concat,1x990,990,3960,3960,0,6.5,6
+370,model/p_node_cat,Concat,Concat,temporal heads + output concat,1x1000,1000,4000,8,0,10.0,9
+371,(unnamed Concat),Concat,Concat,temporal heads + output concat,1x2576,2576,10304,0,0,5.0,4
+372,node__to_copy_4,Cast,Cast,temporal heads + output concat,1x2576,2576,10304,0,0,8.0,6
+373,node_slice_6,Slice,Slice,state carry (slice/concat),1x512,512,2048,32,0,12.0,10
+374,node_unsqueeze_1,Unsqueeze,Unsqueeze,state carry (slice/concat),1x1x512,512,2048,8,0,5.0,4
+375,node_slice_7,Slice,Slice,state carry (slice/concat),95x1x512,48640,194560,32,0,82.0,66
+376,node_cat_2,Concat,Concat,state carry (slice/concat),96x1x512,49152,196608,0,0,40.0,37

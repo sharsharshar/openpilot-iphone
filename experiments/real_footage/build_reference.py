@@ -3,6 +3,9 @@
 Needs in $RF_SCRATCH: log.pkl (extract_log.py), f_nv12.bin / e_nv12.bin (narrow / wide, raw NV12 1344x760, first NFRAMES frames:
   ffmpeg -i fcamera.hevc -frames:v 600 -pix_fmt nv12 -f rawvideo f_nv12.bin ; same for ecamera.hevc -> e_nv12.bin).
 Usage: python -I build_reference.py     (python from the project venv; tinygrad on CPU is used for the warp oracle)
+Other clips: set RF_SCRATCH to the clip directory (log.pkl from extract_log.py, f_nv12.bin / e_nv12.bin decoded at the native
+camera size). The frame size and focal lengths are taken from the device type and sensor in the log (rf_common.camera_config);
+optional environment variables: RF_START (first video frame, default 0), RF_NF (frames, default 600), RF_FIXTURES=0 (skip the 40-step fixtures).
 """
 import os, sys, ctypes, subprocess, pickle, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -12,17 +15,19 @@ import onnxruntime as ort
 from rf_common import *            # noqa
 from PIL import Image
 
-W, H, NF = 1344, 760, 600
-FSIZE = W * H * 3 // 2
-START = 0
-# openpilot camera.py: ("mici","os04c10") -> _os_config: narrow 1344x760 f=1522*3/4, wide f=567/4*3
-K_NARROW = np.array([[1522.0 * 3 / 4, 0, W / 2], [0, 1522.0 * 3 / 4, H / 2], [0, 0, 1]])
-K_WIDE = np.array([[567.0 / 4 * 3, 0, W / 2], [0, 567.0 / 4 * 3, H / 2], [0, 0, 1]])
+NF = int(os.environ.get("RF_NF", 600)); START = int(os.environ.get("RF_START", 0))
 
 d = pickle.load(open(f"{SCRATCH}/log.pkl", "rb"))
-print("device", d["dev"], "sensor narrow/wide", d["sensor"], d["wsensor"])
+print("device", d["dev"], "(initData:", d.get("init"), ") sensor narrow/wide", d["sensor"], d["wsensor"])
+# openpilot camera.py DEVICE_CAMERAS: ("mici","os04c10") -> _os_config: narrow 1344x760 f=1522*3/4, wide f=567/4*3 (first clip);
+# tici/tizi with ar0231 / ox03c10 -> _ar_ox_config: 1928x1208, narrow f=2648, wide f=567
+W, H, F_NARROW, F_WIDE, cfg_key = camera_config(d["dev"], d["sensor"], d.get("init", "unknown"))
+FSIZE = W * H * 3 // 2
+K_NARROW = intrinsics(W, H, F_NARROW); K_WIDE = intrinsics(W, H, F_WIDE)
+print("camera config %s: %dx%d, narrow f %.2f, wide f %.2f" % (cfg_key, W, H, F_NARROW, F_WIDE))
 nar = np.array([x[1] for x in d["nar"]]); wide = np.array([x[1] for x in d["wide"]])
-print("frame ids equal for all 1200:", np.array_equal(nar, wide), "range", nar[0], nar[-1])
+print("frame ids equal for all %d:" % len(nar), np.array_equal(nar, wide), "range", nar[0], nar[-1])
+assert np.array_equal(nar, wide), "narrow and wide frame ids differ"
 sof = np.array([x[2] for x in d["nar"]]) - np.array([x[2] for x in d["wide"]])
 print("narrow-wide start-of-frame difference: %.3f..%.3f ms" % (sof.min() / 1e6, sof.max() / 1e6))
 t_nar = np.array([x[0] for x in d["nar"]], np.float64)
@@ -85,7 +90,7 @@ for i in (0, NF // 2, NF - 1):
     img = np.concatenate([yuv6_to_rgb(frames[i, 0]), yuv6_to_rgb(frames[i, 1])], 1)
     # model-frame horizon reference: y = MEDMODEL_CY(47.6)*? shown as a thin line for narrow centre column
     Image.fromarray(img).save(f"{SCRATCH}/png/warped_{START + i}.png")
-    Image.fromarray(np.concatenate([np.asarray(Image.fromarray(np.asarray(raw[c][(START + i) * FSIZE:(START + i) * FSIZE + W * H]).reshape(H, W)).resize((672, 380))) for c in range(2)], 1)).save(f"{SCRATCH}/png/rawY_{START + i}.png")
+    Image.fromarray(np.concatenate([np.asarray(Image.fromarray(np.asarray(raw[c][(START + i) * FSIZE:(START + i) * FSIZE + W * H]).reshape(H, W)).resize((W // 2, H // 2))) for c in range(2)], 1)).save(f"{SCRATCH}/png/rawY_{START + i}.png")
 print("model-frame principal point for the narrow warp: (256, 47.6) in the 512x256 frame (medmodel_intrinsics)")
 
 # ---- run fp32 model, state from zeros
@@ -104,14 +109,15 @@ print("fp32 model: %d steps in %.1fs, finite: %s" % (NF, time.time() - t0, np.is
 np.savez_compressed(f"{SCRATCH}/real_reference_fp32.npz", frames=frames, desire=desire, traffic_convention=tc, action_t=at, outputs=outputs)
 np.savez(f"{SCRATCH}/real_meta.npz", v_ego=vego_all[sel], frame_id=nar[sel], rpy=rpy)
 
-# ---- 40-step fixtures from a warm part: expected outputs from zero state over exactly these 40 frames
-F0 = 300
-fx = frames[F0:F0 + 40]
-fx_out = run_model(f"{ROOT}/models/driving_supercombo_fp32.onnx", fx, desire[:40], tc[:40], at[:40])
-fx.tofile(f"{SCRATCH}/frames_u8.bin"); fx_out.astype("<f4").tofile(f"{SCRATCH}/outputs_f32.bin")
-print("fixtures: frames %d..%d; sizes %d / %d bytes; zero-state vs long-run outputs on those steps: mean abs diff %.4f (step 0) %.4f (step 39)" % (
-    START + F0, START + F0 + 39, os.path.getsize(f"{SCRATCH}/frames_u8.bin"), os.path.getsize(f"{SCRATCH}/outputs_f32.bin"),
-    np.abs(fx_out[0] - outputs[F0]).mean(), np.abs(fx_out[39] - outputs[F0 + 39]).mean()))
+if os.environ.get('RF_FIXTURES', '1') != '0':
+  # ---- 40-step fixtures from a warm part: expected outputs from zero state over exactly these 40 frames
+  F0 = 300
+  fx = frames[F0:F0 + 40]
+  fx_out = run_model(f"{ROOT}/models/driving_supercombo_fp32.onnx", fx, desire[:40], tc[:40], at[:40])
+  fx.tofile(f"{SCRATCH}/frames_u8.bin"); fx_out.astype("<f4").tofile(f"{SCRATCH}/outputs_f32.bin")
+  print("fixtures: frames %d..%d; sizes %d / %d bytes; zero-state vs long-run outputs on those steps: mean abs diff %.4f (step 0) %.4f (step 39)" % (
+      START + F0, START + F0 + 39, os.path.getsize(f"{SCRATCH}/frames_u8.bin"), os.path.getsize(f"{SCRATCH}/outputs_f32.bin"),
+      np.abs(fx_out[0] - outputs[F0]).mean(), np.abs(fx_out[39] - outputs[F0 + 39]).mean()))
 
 # ---- sanity: is it seeing a road?
 syn = np.load(f"{ROOT}/reference/driving_reference_fp32.npz")["outputs"]
@@ -140,7 +146,8 @@ print("\n== vs device's own modelV2 (frames matched by frameId: %d of %d, warm s
 print(" speed at t=0: device-vs-ours mean abs diff %.3f m/s, corr %.3f; device vs vEgo mean abs %.3f" % (np.abs(dv0[wk] - qr["v0"][ok][wk]).mean(), c(dv0[wk], qr["v0"][ok][wk]), np.abs(dv0[wk] - vs[ok][wk]).mean()))
 print(" plan x@10s: device mean %.1f ours %.1f, corr %.3f" % (dx10[wk].mean(), qr["x10"][ok][wk].mean(), c(dx10[wk], qr["x10"][ok][wk])))
 print(" plan y@10s: mean abs diff %.3f m (ours mean abs %.3f, device mean abs %.3f), corr %.3f" % (np.abs(dy10[wk] - qr["y10"][ok][wk]).mean(), np.abs(qr["y10"][ok][wk]).mean(), np.abs(dy10[wk]).mean(), c(dy10[wk], qr["y10"][ok][wk])))
-print(" desired curvature: mean abs diff %.5f 1/m (device mean abs %.5f, ours %.5f), corr %.3f" % (np.abs(dcurv[wk] - qr["curv"][ok][wk]).mean(), np.abs(dcurv[wk]).mean(), np.abs(qr["curv"][ok][wk]).mean(), c(dcurv[wk], qr["curv"][ok][wk])))
-print(" desired accel: mean abs diff %.3f m/s^2 (device mean abs %.3f, ours %.3f), corr %.3f" % (np.abs(dacc[wk] - qr["acc"][ok][wk]).mean(), np.abs(dacc[wk]).mean(), np.abs(qr["acc"][ok][wk]).mean(), c(dacc[wk], qr["acc"][ok][wk])))
+has_act = any(mm[int(nar[START + i])].get("has_action", True) for i in ok)    # older logs have no modelV2.action
+if has_act: print(" desired curvature: mean abs diff %.5f 1/m (device mean abs %.5f, ours %.5f), corr %.3f" % (np.abs(dcurv[wk] - qr["curv"][ok][wk]).mean(), np.abs(dcurv[wk]).mean(), np.abs(qr["curv"][ok][wk]).mean(), c(dcurv[wk], qr["curv"][ok][wk])))
+if has_act: print(" desired accel: mean abs diff %.3f m/s^2 (device mean abs %.3f, ours %.3f), corr %.3f" % (np.abs(dacc[wk] - qr["acc"][ok][wk]).mean(), np.abs(dacc[wk]).mean(), np.abs(qr["acc"][ok][wk]).mean(), c(dacc[wk], qr["acc"][ok][wk])))
 print(" inner lane-line probs: device mean %s ours %s" % (np.round(dlp[wk].mean(0), 3), np.round(qr["lane"][ok][wk][:, 1:3].mean(0), 3)))
 print(" lead prob: device mean %.3f ours %.3f; corr %.3f" % (dlead[wk].mean(), qr["lead"][ok][wk].mean(), c(dlead[wk], qr["lead"][ok][wk])))
