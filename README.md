@@ -84,6 +84,14 @@ Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_m
   fuses elementwise work, so fusion is not the lever; the gap is kernel quality (tinygrad's generated CPU code is
   about 5x slower than a hand-written or onnxruntime kernel on the hottest block). Also sizes the big model.
 
+- `experiments/phone_errors/`: how much the driving outputs move under errors an iPhone would introduce,
+  replayed on real footage: calibration and focal-length errors, one camera feeding both inputs, dropped or
+  out-of-sync frames, image quality. Yaw and pitch calibration matter most; almost nothing done to the wide
+  input matters on this clip. Also measures the model's noise floor: one grey level of input noise already moves
+  the plan by about a metre at 10 s.
+- `experiments/ane_variants/`: graph rewrites of the small model aimed at the Neural Engine, each checked against
+  the reference. Speed is not measured anywhere yet.
+
 ## Simulator caveat
 
 The simulator has no Neural Engine and no camera. It runs the model on the Mac CPU (and maybe GPU)

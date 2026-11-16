@@ -353,3 +353,15 @@ Same cases against the comma device's own modelV2 (mean abs difference, warm ste
 | hfov90_rpy0_wide_view | 0.000 | 0.000 | 0.000 |
 
 speed used for lateral acceleration: v_ego warm mean 16.4 m/s, range 11.8..22.2
+
+## Independent noise-floor check (added after review)
+`noise_floor_check.py` perturbs the stored model inputs directly, with no warp involved, and measures the change on
+warm steps (mean / worst):
+
+| input change | curvature (1/m) | acceleration (m/s^2) | plan x at 10 s (m) | plan y at 10 s (m) | lane-line prob |
+|---|---|---|---|---|---|
+| +-1 grey level of random noise on every sample | 0.000047 / 0.00034 | 0.014 / 0.095 | 1.3 / 15.8 | 0.77 / 5.3 | 0.011 / 0.16 |
+| every channel shifted by 1 sample (about 0.13 deg of yaw) | 0.00013 / 0.00070 | 0.022 / 0.18 | 2.2 / 22.9 | 1.1 / 9.0 | 0.014 / 0.17 |
+
+This agrees with the control runs above: input changes far too small to see move the driving outputs by about this
+much. Differences of this size or smaller, from any cause, are inside the model's own sensitivity to its input on this clip.
