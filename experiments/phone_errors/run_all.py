@@ -22,6 +22,13 @@ def calib():
                 r = RPY0.copy().astype(np.float64); r[i] += sg * mag * DEG
                 finish("cal_%s_%s%g" % (ax, "+" if sg > 0 else "-", mag), "%s offset %+g deg added to the logged calibration" % (ax, sg * mag), baseline_inputs(rpy=r.astype(np.float32)))
 
+def control():
+    """tiny perturbations, to see how much the outputs move for almost no input change (a noise floor for the tables)"""
+    for ax, i in (("pitch", 1), ("yaw", 2)):
+        r = RPY0.copy().astype(np.float64); r[i] += 0.1 * DEG
+        finish("ctl_%s_+0.1" % ax, "CONTROL: %s offset +0.1 deg" % ax, baseline_inputs(rpy=r.astype(np.float32)))
+    finish("ctl_focal_+0.5", "CONTROL: both focal lengths +0.5%", baseline_inputs(fn=F_NARROW * 1.005, fw=F_WIDE * 1.005))
+
 def focal():
     for which in ("both", "narrow", "wide"):
         for pct in (2, 5, 10):

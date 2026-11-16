@@ -29,6 +29,7 @@ def sgn(s): return "+" if s > 0 else "-"
 cal = ["cal_zero"] + ["cal_%s_%s%g" % (ax, s, m) for ax in ("pitch", "yaw", "roll") for m in (0.5, 1, 2, 5) for s in "+-"]
 table("1. Calibration error (offsets added to the logged rpy, both cameras; rpy = [roll, pitch, yaw])", cal)
 foc = ["foc_%s_%s%d" % (w, s, p) for w in ("both", "narrow", "wide") for p in (2, 5, 10) for s in "+-"]
+table("0. Control: tiny perturbations (noise floor)", ["ctl_pitch_+0.1", "ctl_yaw_+0.1", "ctl_focal_+0.5"])
 table("2. Focal length error (assumed = true x (1 +/- pct))", foc)
 table("3. One physical camera feeding both inputs", ["one_wide", "one_narrow", "ios_narrowsrc", "ios_widesrc", "ios_narrowsrc_truef"])
 table("4. Timing", ["drop5_repeat", "drop2_repeat", "drop5_skip", "drop2_skip", "lag_wide1", "lag_wide2"])

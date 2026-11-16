@@ -28,6 +28,7 @@ $PY -I $A/convert_variants.py $OUT all --json $OUT/coreml.json 2>&1 | grep -v "p
 $PY -I $A/convert_variants.py $OUT base,ALL_DROPIN_noB,ALL_noB --io16 --json $OUT/coreml.json 2>&1 | grep -v "passes/s\|ops/s"
 $PY -I $A/check_stem_fold.py $OUT
 $PY -I $A/fp16_exactness.py $OUT
+$PY -I $A/mac_count.py $OUT/base.onnx > $OUT/mac_count.txt
 if [ -n "$ANEFORGE" ]; then $PY -I $A/aneforge_check.py "$ANEFORGE" $OUT all --json $OUT/aneforge.json; fi
 if [ -n "$REAL_REF" ]; then $PY -I $A/precision_controls.py $OUT "$REAL_REF" $OUT/controls.json; fi
 $PY -I $A/make_report.py $OUT
