@@ -5,9 +5,10 @@ Usage: python -I precision_controls.py <variants_dir> <real_reference.npz> <out.
 1. ulp_stem / ulp_all: the lean model with the stem conv's (or every) weight and bias multiplied by (1 + u * 2^-24), u uniform in
    [-1, 1]: a different but equally valid float32 rounding of the same network. Its drift from the reference over 600 recurrent
    steps is the yardstick for "float32 rounding level" (variant B's fold, E5 and C's re-ordered sums are of this kind).
-2. fp16w: base / B / ALL_DROPIN with every float weight rounded to the nearest float16 (activations stay float32). This says
-   whether folding the normalisation into the stem conv (a bigger bias, w/63.75) makes the model more sensitive to float16
-   WEIGHTS than the original; it does not model float16 activations or the Neural Engine.
+2. fp16w_*: the variant with every float weight rounded to the nearest float16 (activations stay float32). The shipped model's
+   weights are already float16 numbers, so for a variant that keeps them this changes nothing; for one that folds constants into
+   weights (B, E_fold, ALL_DROPIN, ALL) it measures what float16 weight storage (the Core ML package) costs on top of the float32 result.
+   It does not model float16 activations or the Neural Engine.
 """
 import json, os, sys, time
 import numpy as np, onnx
@@ -46,7 +47,7 @@ def fp16(name, a):
     return a.astype(np.float16).astype(np.float32) if a.size > 1 else a
 
 jobs = [("ulp_stem", "base", ulp(lambda n: "stem.0.reparam_conv" in n)), ("ulp_all", "base", ulp(lambda n: True)),
-        ("fp16w_base", "base", fp16), ("fp16w_B", "B", fp16), ("fp16w_ALL_DROPIN", "ALL_DROPIN", fp16)]
+        ("fp16w_B", "B", fp16), ("fp16w_E_fold", "E_fold", fp16), ("fp16w_ALL_DROPIN_noB", "ALL_DROPIN_noB", fp16), ("fp16w_ALL_DROPIN", "ALL_DROPIN", fp16)]
 res = {}
 if os.environ.get("JOBS"):
     jobs = [j for j in jobs if j[0] in os.environ["JOBS"].split(",")]

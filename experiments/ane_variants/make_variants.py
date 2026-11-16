@@ -27,26 +27,28 @@ def build(name, gb):
         return R.rw_cleanup_reshapes(gb)
     if name == "D":                      # queues in the app (time-major layouts)
         return R.rw_D(gb, cf=False)
-    if name == "E":                      # other exact simplifications (token-major)
-        R.rw_E_simple(gb)
+    if name in ("E", "E_fold"):          # other exact simplifications (token-major); E_fold adds the two weight folds
+        R.rw_E_simple(gb, folds=(name == "E_fold"))
         R.rw_tokens_shortcut(gb, cf=False)
         return R.rw_transformer(gb, prune=True, cf=False)
-    if name == "ALL_DROPIN":             # A+B+C+E, same interface as the lean package
-        R.rw_A(gb); R.rw_B(gb); R.rw_E_simple(gb)
-        R.rw_tokens_shortcut(gb, cf=True)
-        R.rw_transformer(gb, prune=True, cf=True)
-        R.rw_C_fc(gb)
-        return R.rw_cleanup_reshapes(gb)
-    if name == "ALL":                    # A+B+C+D+E, queues in the app, channel-first inputs
-        R.rw_A(gb); R.rw_B(gb)
-        R.rw_D(gb, cf=True)
-        R.rw_E_simple(gb)
+    if name in ("ALL_DROPIN", "ALL_DROPIN_noB", "ALL", "ALL_noB"):
+        # ALL_DROPIN = A+B+C+E (same interface as the lean package); ALL = A+B+C+D+E (queues in the app, channel-first inputs);
+        # *_noB leave the input normalisation alone, so that every weight stays an exact float16 number (see fp16_exactness.py)
+        d = name.startswith("ALL") and not name.startswith("ALL_DROPIN")
+        R.rw_A(gb)
+        if not name.endswith("_noB"):
+            R.rw_B(gb)
+        if d:
+            R.rw_D(gb, cf=True)
+        R.rw_E_simple(gb, folds=False)
+        if not d:
+            R.rw_tokens_shortcut(gb, cf=True)
         R.rw_transformer(gb, prune=True, cf=True)
         R.rw_C_fc(gb)
         return R.rw_cleanup_reshapes(gb)
     raise KeyError(name)
 
-VARIANTS = ["base", "A", "B", "C", "D", "E", "ALL_DROPIN", "ALL"]    # base = the lean model, copied unchanged
+VARIANTS = ["base", "A", "B", "C", "D", "E", "E_fold", "ALL_DROPIN_noB", "ALL_DROPIN", "ALL_noB", "ALL"]    # base = the lean model, copied unchanged
 
 
 def main():

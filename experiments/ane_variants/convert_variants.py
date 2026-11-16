@@ -46,7 +46,7 @@ def convert(onnx_path, out_path, io16=False):
     class _R(dict):
         files = property(lambda s: [])
     ref = _R(ref)
-    nsteps = 6
+    nsteps = 3
     stacks = V.precompute_stacks(ref["frames"][:nsteps])
     names = [n for n, _ in ins]
     def tpred(feed):

@@ -4,7 +4,7 @@ import json, os, sys
 vd = sys.argv[1]
 L = lambda n: json.load(open(os.path.join(vd, n))) if os.path.exists(os.path.join(vd, n)) else {}
 ver, cml, af = L("verify.json"), L("coreml.json"), L("aneforge.json")
-order = [k for k in ["base", "A", "B", "C", "D", "E", "ALL_DROPIN", "ALL"] if k in cml or k in ver]
+order = [k for k in ["base", "A", "B", "C", "D", "E", "E_fold", "ALL_DROPIN_noB", "ALL_DROPIN", "ALL_noB", "ALL"] if k in cml or k in ver]
 b = cml.get("base", {})
 
 def iface(r):

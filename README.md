@@ -72,6 +72,8 @@ Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_m
   the exact GELU change driving outputs negligibly; 8-bit weights and cruder GELU forms do not. The video and
   frames are downloaded at run time; only a 2-second, model-input-sized excerpt is committed, as the
   self-test's second fixture set (`fixtures/README.md`). See `RESULTS.md`.
+  Repeated on five more clips (daylight, residential streets, freeway, turns, three other comma devices): the
+  conclusions hold on all six, and errors from crude GELU forms and 8-bit weights are 5 to 20 times larger in turns.
 
 - `experiments/car_link/RESEARCH.md`: how an iPhone app could exchange data with a panda. Per Apple's own
   engineers, an iPhone app cannot talk to a vendor-specific USB device such as the panda directly; the wired

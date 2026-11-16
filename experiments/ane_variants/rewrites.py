@@ -169,17 +169,19 @@ def rw_D(gb, cf):
 # ----------------------------------------------------------------------------------------------------------------
 # E. other exact simplifications
 # ----------------------------------------------------------------------------------------------------------------
-def rw_E_simple(gb, keep_next_states=True):
-    """Remove no-op nodes and small redundancies. Bit-identical except E5.
+def rw_E_simple(gb, folds=False):
+    """Remove no-op nodes and small redundancies. Bit-identical except E5/E7 (rounding level, only with folds=True).
 
     E1  Cast(float32 -> float32): 6 nodes, removed.
     E2  Identity: 3 nodes, removed.
     E3  Clip(min=0) of a vector 2-norm (a norm is >= 0): removed.
     E4  Expand([1,1] -> [1,512]) feeding a Div: the Div broadcasts instead.
-    E5  layer_scale: Conv -> Mul(gamma per channel): gamma folded into that conv's weights and bias (12 Mul nodes).
-        Float32 rounding level, not bit-identical (w*gamma is a new rounding).
+    E5  (only with folds=True) layer_scale: Conv -> Mul(gamma per channel): gamma folded into that conv's weights and bias
+        (12 Mul nodes). Float32 rounding level, not bit-identical (w*gamma is a new rounding), and the folded weights are NOT
+        float16 numbers any more (see fp16_exactness.py): in a float16 package this moves the rounding point.
     E6  next_state_feat_q's new row is sliced out of `outputs` again; use the feature vector that `outputs` was built from.
-    E7  Mul(Gemm output, per-feature constant): the constant is folded into the Gemm rows (2 nodes). Rounding level.
+    E7  (only with folds=True) Mul(Gemm output, per-feature constant): the constant is folded into the Gemm rows (2 nodes).
+        Same caveat as E5.
     E8  `hidden` = vision_outputs[:, 1064:1576] is exactly the last piece of the Concat that built vision_outputs (checked
         from the widths): use that piece; then the nested Concats that build `outputs` become one Concat. Bit-identical.
     """
@@ -198,7 +200,7 @@ def rw_E_simple(gb, keep_next_states=True):
         d.input[1] = n.input[0]
         gb.remove(n)
     folded = 0
-    for n in list(gb.find(op="Mul")):
+    for n in (list(gb.find(op="Mul")) if folds else []):
         if n.input[1] in gb.init and gb.init[n.input[1]].ndim == 3 and gb.init[n.input[1]].shape[1:] == (1, 1):
             conv = gb.producer(n.input[0])
             if conv is None or conv.op_type != "Conv" or len(gb.consumers(conv.output[0])) != 1:
@@ -211,10 +213,10 @@ def rw_E_simple(gb, keep_next_states=True):
             gb.replace_uses(n.output[0], conv.output[0])
             gb.remove(n)
             folded += 1
-    assert folded == 12, folded
+    assert folded == (12 if folds else 0), folded
     # E7: Mul(Gemm output, constant per-feature scale) -> scale folded into the Gemm's rows
     folded7 = 0
-    for n in list(gb.find(op="Mul")):
+    for n in (list(gb.find(op="Mul")) if folds else []):
         if n.input[1] in gb.init and gb.init[n.input[1]].ndim == 1:
             gm = gb.producer(n.input[0])
             if gm is None or gm.op_type != "Gemm" or len(gb.consumers(gm.output[0])) != 1:
@@ -228,7 +230,7 @@ def rw_E_simple(gb, keep_next_states=True):
             gb.replace_uses(n.output[0], gm.output[0])
             gb.remove(n)
             folded7 += 1
-    assert folded7 == 2, folded7
+    assert folded7 == (2 if folds else 0), folded7
     # E8: hidden = vision_outputs[:, 1064:1576] is exactly the last input of the Concat that built vision_outputs; then the
     # two Concats feeding `outputs` are one Concat.
     vo = gb.one(out="model/vision_outputs")
@@ -252,7 +254,7 @@ def rw_E_simple(gb, keep_next_states=True):
         assert cat.input[1] == "unsqueeze_1"
         cat.input[1] = "model/hidden_t"
     gb.invalidate_shapes()
-    gb.log.append("E1-E8 no-op removal, layer_scale (12) and output scales (2) folded, hidden slice and nested Concats removed")
+    gb.log.append(f"E1-E8 no-op removal, hidden slice and nested Concats removed; weight folds (layer_scale 12, output scale 2): {folds}")
     return gb
 
 
@@ -295,8 +297,7 @@ def rw_transformer(gb, prune, cf):
       unmasked, so only its query is needed: queries/attention rows/c_proj/LayerNorm 2/MLP of the other 8 tokens are
       dead compute and are not built; keys and values still use all 9 tokens. The mask disappears (row 8 has no masked
       entry). Mathematically identical; float32 rounding level because matrix products over fewer rows may sum in a
-      different order. The 1/sqrt(64) = 0.125 score scale is folded into the query weights and bias (a power of two,
-      so the fold is exact).
+      different order.
     cf: channel-first (B, C, 1, S) tensors as in Apple's ANE transformer article: every Linear is a 1x1 Conv, tokens lie along
       the last axis, LayerNorm is over channels (written out with ReduceMean as in Apple's LayerNormANE, since ONNX's
       LayerNormalization normalises over trailing axes). The 8 heads are a reshape of the channel axis.
@@ -330,7 +331,8 @@ def rw_transformer(gb, prune, cf):
     f32 = np.float32
     Wq, Wk, Wv = (p(W_qkv)[:, i * 512:(i + 1) * 512] for i in range(3))
     bq, bk, bv = (p(b_qkv)[i * 512:(i + 1) * 512] for i in range(3))
-    Wq, bq = Wq * f32(0.125), bq * f32(0.125)             # exact: power of two
+    scale = gb.const(f32(0.125), "attn_scale")               # applied to the scores as in the original (folding it into the query
+                                                            # weights is exact in float32 but pushes 1091 weights into float16's subnormal range)
 
     if not cf:
         assert prune
@@ -345,7 +347,8 @@ def rw_transformer(gb, prune, cf):
         qh = gb.add("Reshape", [q, gb.ints([1, 8, 1, 64])], hint="qh")
         kh = gb.add("Transpose", [gb.add("Reshape", [k, gb.ints([1, 9, 8, 64])], hint="kr")], hint="kh", perm=[0, 2, 3, 1])
         vh = gb.add("Transpose", [gb.add("Reshape", [v, gb.ints([1, 9, 8, 64])], hint="vr")], hint="vh", perm=[0, 2, 1, 3])
-        att = gb.add("Softmax", [gb.add("MatMul", [qh, kh], hint="scores")], hint="softmax", axis=-1)
+        sc = gb.add("Mul", [gb.add("MatMul", [qh, kh], hint="scores"), scale], hint="scores_scaled")
+        att = gb.add("Softmax", [sc], hint="softmax", axis=-1)
         ctx_m = gb.add("MatMul", [att, vh], hint="ctx")                       # [1,8,1,64]
         ctx = gb.add("Reshape", [ctx_m, gb.ints([1, 1, 512])], hint="ctx_r")
         x1 = gb.add("Add", [x0_last, lin(ctx, p(W_pr), p(b_pr), "proj")], hint="res1")
@@ -394,7 +397,8 @@ def rw_transformer(gb, prune, cf):
         x_res = gb.add("Slice", [x0, gb.ints([8]), gb.ints([9]), gb.ints([3])], hint="x0_last")
         q4 = conv(a_last, Wq, bq, "q")                                                  # [1,512,1,1]
         qh = gb.add("Reshape", [q4, gb.ints([1, 8, 1, 64])], hint="qh")
-        att = gb.add("Softmax", [gb.add("MatMul", [qh, kh], hint="scores")], hint="softmax", axis=-1)     # [1,8,1,9]
+        sc = gb.add("Mul", [gb.add("MatMul", [qh, kh], hint="scores"), scale], hint="scores_scaled")
+        att = gb.add("Softmax", [sc], hint="softmax", axis=-1)                                            # [1,8,1,9]
         attT = gb.add("Reshape", [att, gb.ints([1, 8, 9, 1])], hint="attT")                              # singleton swap: no data movement
         ctx_m = gb.add("MatMul", [vh, attT], hint="ctx")                                                 # [1,8,64,1]
         ctx = gb.add("Reshape", [ctx_m, gb.ints([1, 512, 1, 1])], hint="ctx_r")
@@ -402,7 +406,7 @@ def rw_transformer(gb, prune, cf):
         q4 = conv(a, Wq, bq, "q")
         qh = gb.add("Reshape", [q4, gb.ints([1, 8, 64, 9])], hint="qh")
         qT = gb.add("Transpose", [qh], hint="qT", perm=[0, 1, 3, 2])                                      # [1,8,9,64]
-        sc = gb.add("MatMul", [qT, kh], hint="scores")                                                    # [1,8,9(q),9(k)]
+        sc = gb.add("Mul", [gb.add("MatMul", [qT, kh], hint="scores"), scale], hint="scores_scaled")      # [1,8,9(q),9(k)]
         assert mask is not None and mask.shape == (1, 1, 9, 9)
         sc = gb.add("Add", [sc, gb.const(np.where(mask, NEG_BIG, f32(0)).astype(f32), "maskbias")], hint="masked")
         att = gb.add("Softmax", [sc], hint="softmax", axis=-1)
