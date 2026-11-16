@@ -60,6 +60,12 @@ Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_m
   GPU via Metal: matches the reference, 161 kernel launches per inference from 78 distinct kernels, 51 ms per run
   with the time spread evenly across kernels. Timings on a virtual GPU do not predict a phone.
 
+- `experiments/real_footage/`: the accuracy experiments repeated on 30 s of real road video (openpilot's own
+  model-replay segment, both cameras, logged calibration and speed). The warp matches openpilot's on real frames,
+  and the model's curvature output correlates 0.998 with what the comma device computed on that drive. float16 and
+  the exact GELU change driving outputs negligibly; 8-bit weights and cruder GELU forms do not. The video and
+  frames are downloaded at run time and are not in this repo. See `RESULTS.md`.
+
 ## Simulator caveat
 
 The simulator has no Neural Engine and no camera. It runs the model on the Mac CPU (and maybe GPU)
