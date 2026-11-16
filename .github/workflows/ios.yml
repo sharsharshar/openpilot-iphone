@@ -16,6 +16,7 @@ on:
       - '.github/workflows/aneforge.yml'
       - '.github/workflows/tinygrad-metal.yml'
       - '.github/workflows/ane-probe.yml'
+      - '.github/workflows/ane-variants.yml'
   workflow_dispatch:
 
 defaults:
