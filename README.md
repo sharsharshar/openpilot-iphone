@@ -22,6 +22,12 @@ Verified on GitHub's hosted Macs (see the Actions tab):
 - **Known open issue:** on the iOS 26.2 simulator the same model gives systematically different numbers
   (worst difference 5.9, mean 0.057, far end of the plan consistently low) and the self-test fails. The cause
   is not known. The CI job for iOS 26 reports this without failing the workflow.
+- **Real road frames:** the self-test also runs 40 frames of real driving video (`REALTEST` lines). On these the
+  three Core ML builds agree with each other: average output difference from the float32 reference is 0.011
+  (macOS 15), 0.011 (iOS 18.6 simulator) and 0.013 (iOS 26.2 simulator), and all three pass. So the iOS 26 offset
+  is mostly specific to the synthetic frames. Worst change in the driving outputs on real frames, any build:
+  curvature 0.0001 1/m, acceleration 0.04 m/s^2, plan distance at 10 s 1.4 m. Core ML's float16 is still about
+  ten times further from the reference than onnxruntime's float16 on the same frames (0.001).
 
 Not verified anywhere yet: a real iPhone, the camera path (frame rate, intrinsics, orientation), the warp on
 real camera frames, and anything on the Neural Engine or GPU.
