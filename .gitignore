@@ -17,3 +17,4 @@ DerivedData/
 xcuserdata/
 .DS_Store
 core/tests/build/
+aneforge-cache/
