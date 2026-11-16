@@ -200,3 +200,22 @@ How the graph relates (from `mac_count.py` on the lean model: 847 million MACs, 
 
 `gb.py` (graph-edit helper), `rewrites.py` (all rewrites, with docstrings stating exactness), `make_variants.py`, `verify_variants.py` (onnxruntime float32, both references, app-side queue emulation), `convert_variants.py` (+ `shim_extra.py`: Pad and
 rsqrt converters on top of `scripts/onnx2torch_shim.py`), `aneforge_check.py`, `precision_controls.py`, `fp16_exactness.py`, `check_stem_fold.py`, `mac_count.py`, `make_report.py`, `run_all.sh`.
+
+## Core ML execution on a Mac (added after review)
+The `ane-variants` CI workflow builds the drop-in variants on a GitHub macOS 15 runner (a virtual machine, CPU only, no
+Neural Engine), runs each Core ML package with state carried, and compares with the float32 reference: the 40 synthetic
+steps and the 40-step real-footage fixture. Run 43974065669:
+
+| variant | synthetic: worst / mean | real fixture: worst / mean |
+|---|---|---|
+| base (lean) | 2.389 / 0.01739 | 1.790 / 0.01146 |
+| A | 2.389 / 0.01739 | 1.790 / 0.01146 |
+| C | 2.389 / 0.01768 | 1.783 / 0.01160 |
+| E | 2.389 / 0.01739 | 1.790 / 0.01146 |
+| ALL_DROPIN_noB | 2.389 / 0.01761 | 1.783 / 0.01155 |
+
+So the converted packages compute the same thing as the shipped one to within Core ML's float16 noise; A and E are
+identical to it to the printed digits. Results were the same for the CPU_ONLY and ALL compute-unit settings.
+Per-run times on that shared virtual machine ranged from 12 to 27 ms with no consistent ordering between variants or
+settings, so they are not reported as a comparison. Variants D, ALL_noB and the io16 packages (different interfaces)
+were not run.
