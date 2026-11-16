@@ -1,0 +1,68 @@
+name: ane-variants
+
+# Experiment: build the drop-in model variants from experiments/ane_variants on a Mac, run each Core ML package
+# and compare it with the float32 reference (synthetic steps and the real-footage fixture). Conversion was only
+# ever checked on Linux, where Core ML cannot execute. Hosted Macs are virtual machines with no Neural Engine,
+# so the timings are CPU numbers and say nothing about a phone.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "experiments/ane_variants/**"
+      - ".github/workflows/ane-variants.yml"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  NAMES: base,A,C,E,ALL_DROPIN_noB
+
+jobs:
+  variants:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python packages
+        run: python -m pip install numpy onnx==1.23.2 onnxruntime torch==2.15.0 torchvision onnx2torch==1.5.15 coremltools==9.0
+      - name: Build the variants (ONNX)
+        run: |
+          mkdir -p models/variants out
+          python scripts/make_fp32.py models/driving_supercombo.onnx models/driving_supercombo_fp32.onnx
+          python scripts/make_lean.py models/driving_supercombo_fp32.onnx models/variants/_lean
+          python experiments/ane_variants/make_variants.py models/variants/_lean/driving_supercombo_lean_fp32.onnx models/variants "$NAMES"
+          python experiments/ane_variants/verify_variants.py models/variants "$NAMES" --json out/verify.json 2>&1 | tee out/verify_onnx.txt
+      - name: Convert to Core ML
+        run: python experiments/ane_variants/convert_variants.py models/variants "$NAMES" --json out/coreml.json 2>&1 | grep -v "passes/s\|ops/s" | tee out/convert.txt
+      - name: Real-footage reference from the committed fixture
+        run: |
+          python - <<'PY'
+          import numpy as np
+          n = 40
+          np.savez("out/real40.npz",
+                   frames=np.fromfile("fixtures/real_frames_u8.bin", np.uint8).reshape(n, 2, 6, 128, 256),
+                   outputs=np.fromfile("fixtures/real_outputs_f32.bin", "<f4").reshape(n, 2576),
+                   desire=np.zeros((n, 8), np.float32),
+                   traffic_convention=np.tile(np.array([[1, 0]], np.float32), (n, 1, 1)),
+                   action_t=np.tile(np.array([[0.2, 0.5]], np.float32), (n, 1, 1)))
+          PY
+      - name: Run each Core ML package against the references
+        run: |
+          for v in ${NAMES//,/ }; do
+            for units in CPU_ONLY ALL; do
+              for ref in reference/driving_reference_fp32.npz out/real40.npz; do
+                echo "=== $v $units $ref" | tee -a out/coreml_run.txt
+                python scripts/verify_coreml_mac.py models/variants/$v.mlpackage $ref $units 2>&1 | grep -v "^Failed to load\|not been tested" | tee -a out/coreml_run.txt || true
+              done
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ane-variants
+          path: out/
