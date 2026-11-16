@@ -73,6 +73,10 @@ Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_m
   frames are downloaded at run time; only a 2-second, model-input-sized excerpt is committed, as the
   self-test's second fixture set (`fixtures/README.md`). See `RESULTS.md`.
 
+- `experiments/car_link/RESEARCH.md`: how an iPhone app could exchange data with a panda. Per Apple's own
+  engineers, an iPhone app cannot talk to a vendor-specific USB device such as the panda directly; the wired
+  route Apple supports is a bridge that presents itself as a USB Ethernet (NCM) adapter. Nothing here is tested.
+
 ## Simulator caveat
 
 The simulator has no Neural Engine and no camera. It runs the model on the Mac CPU (and maybe GPU)
