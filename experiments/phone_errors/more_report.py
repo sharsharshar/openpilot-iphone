@@ -48,6 +48,32 @@ def devtable(c, short=False):
         if short and n not in SHORT_DEV: continue
         d = devdist(c, q); f = lambda x: "n/a" if x is None else g(x)
         print("| %s | %s | %s | %s | %s | %s | %s |" % (n, f(d["curv"]), f(d["acc"]), f(d["y10"]), f(d["x10"]), f(d["lane"]), f(d["lead"])))
+def signed_turn_table(C, names):
+    """On turn steps: mean of sign(reference curvature) x (perturbed - reference curvature), i.e. positive = the perturbed run turns more than the reference, negative = less; as a fraction of the mean |reference curvature| on those steps."""
+    print("\n### Signed change in curvature on turn steps (sign of the reference curvature x (perturbed - reference), mean; in brackets as a fraction of mean |reference curvature| on those steps)\n")
+    print("Positive: perturbed run commands more curvature in the direction of the turn; negative: less.\n")
+    print("| case | %s |\n|---|%s" % (" | ".join(names), "---|" * len(names)))
+    for n in ORDER:
+        cells = []
+        for t in names:
+            c = C[t]
+            if n not in c["cases"]: cells.append("-"); continue
+            m = masks(c)["turn"]; ref = c["base"]["curv"][m]; d = np.sign(ref) * (c["cases"][n]["curv"][m] - ref)
+            cells.append("%s (%+.0f%%)" % (g(d.mean()), 100 * d.mean() / np.abs(ref).mean()))
+        print("| %s | %s |" % (n, " | ".join(cells)))
+
+HEAD_ROWS = ["ctl_yaw_+0.1", "cal_zero", "cal_yaw_+1", "cal_yaw_-1", "cal_yaw_+2", "cal_yaw_-2", "cal_pitch_+1", "cal_pitch_-1", "cal_pitch_+2", "cal_pitch_-2", "cal_roll_+2", "foc_both_+5", "foc_both_-5",
+             "foc_wide_+5", "foc_wide_-5", "wide_lag2", "wide_frozen", "wide_grey", "one_narrow", "narrow_lag2", "narrow_frozen", "narrow_grey", "one_wide", "ios_narrowsrc", "ios_narrowsrc_truef", "drop5_repeat", "drop2_skip", "img_down2"]
+def headline(C):
+    """compact table: mean change as a multiple of the clip's own noise floor, for curvature and desired acceleration, all warm steps per clip and turn steps for clips with turns"""
+    tn = [n for n, c in C.items() if masks(c)["turn"].sum() >= 20]
+    cols = [(n, "all") for n in C] + [(n, "turn") for n in tn]
+    for k, label in KEYS[:2]:
+        print("\n**%s**, mean |change| / mean |change| of `ctl_noise1` (floor in the first row, absolute)\n\n| case | %s |\n|---|%s" % (label, " | ".join(n if s == "all" else n + " turn steps" for n, s in cols), "---|" * len(cols)))
+        print("| floor (ctl_noise1), absolute | %s |" % " | ".join(g(change(C[n], "ctl_noise1", masks(C[n])[s])[k][0]) for n, s in cols))
+        for r in HEAD_ROWS:
+            print("| %s | %s |" % (r, " | ".join("%.3g" % (change(C[n], r, masks(C[n])[s])[k][0] / change(C[n], "ctl_noise1", masks(C[n])[s])[k][0]) for n, s in cols)))
+
 def ratio_tables(C, sub, names, title):
     """mean change divided by the clip's own noise floor (ctl_noise1) on the same steps"""
     print("\n### %s\n\nCell = mean |change| of the case divided by mean |change| of `ctl_noise1` (+-1 grey level of random noise) in the same clip and on the same steps. Above 1 means larger than the clip's own noise floor.\n" % title)
@@ -57,10 +83,12 @@ def ratio_tables(C, sub, names, title):
             print("| %s | %s |" % (n, " | ".join(("%.3g" % (change(C[t], n, masks(C[t])[sub])[k][0] / change(C[t], "ctl_noise1", masks(C[t])[sub])[k][0])) if n in C[t]["cases"] else "-" for t in names)))
 
 if __name__ == "__main__":
+    # flags: --short-dev (fewer rows in the device tables), --abs (also print absolute cross-clip tables)
     args = [a for a in sys.argv[1:] if not a.startswith("--")]; short = "--short-dev" in sys.argv
     C = {}
     for a in args:
         n, d = a.split("=", 1); C[n] = load(d)
+    if "--headline" in sys.argv: headline(C); sys.exit()
     for n, c in C.items():
         w = masks(c); v = c["v"]
         print("\n### Clip %s\n\nunperturbed |curvature| warm: mean %.4f max %.4f 1/m; steps with |curvature| > %g: %d of 500 (v_ego there %s m/s); v_ego warm %.1f..%.1f mean %.1f" % (
@@ -70,19 +98,21 @@ if __name__ == "__main__":
         if w["turn"].sum() >= 20:
             table(c, "turn", "%s: steps with |reference curvature| > %g" % (n, TURN_CURV)); table(c, "rest", "%s: all other warm steps" % n)
         devtable(c, short)
-    print("\n### Cross-clip summary: mean change over warm steps (worst in the per-clip tables)\n")
     names = list(C)
     ratio_tables(C, "all", names, "Cross-clip summary as multiples of each clip's noise floor, all warm steps")
     tn0 = [n for n, c in C.items() if masks(c)["turn"].sum() >= 20]
+    if tn0: signed_turn_table(C, tn0)
     if tn0: ratio_tables(C, "turn", tn0, "Cross-clip summary as multiples of the noise floor, turn steps only (|reference curvature| > %g)" % TURN_CURV)
-    for k, label in KEYS:
-        print("\n**%s**\n\n| case | %s |\n|---|%s" % (label, " | ".join(names), "---|" * len(names)))
-        for n in ORDER:
-            print("| %s | %s |" % (n, " | ".join(g(change(c, n, masks(c)["all"])[k][0]) if n in c["cases"] else "-" for c in C.values())))
-    tn = [n for n, c in C.items() if masks(c)["turn"].sum() >= 20]
-    if tn:
-        print("\n### Cross-clip summary, turn steps only (|reference curvature| > %g), mean change\n" % TURN_CURV)
-        for k, label in KEYS[:4]:
-            print("\n**%s**\n\n| case | %s |\n|---|%s" % (label, " | ".join(tn), "---|" * len(tn)))
+    if "--abs" in sys.argv:
+        print("\n### Cross-clip summary: mean change over warm steps (absolute; worst in the per-clip tables)\n")
+        for k, label in KEYS:
+            print("\n**%s**\n\n| case | %s |\n|---|%s" % (label, " | ".join(names), "---|" * len(names)))
             for n in ORDER:
-                print("| %s | %s |" % (n, " | ".join(g(change(C[t], n, masks(C[t])["turn"])[k][0]) if n in C[t]["cases"] else "-" for t in tn)))
+                print("| %s | %s |" % (n, " | ".join(g(change(c, n, masks(c)["all"])[k][0]) if n in c["cases"] else "-" for c in C.values())))
+        tn = [n for n, c in C.items() if masks(c)["turn"].sum() >= 20]
+        if tn:
+            print("\n### Cross-clip summary, turn steps only (|reference curvature| > %g), mean change\n" % TURN_CURV)
+            for k, label in KEYS[:4]:
+                print("\n**%s**\n\n| case | %s |\n|---|%s" % (label, " | ".join(tn), "---|" * len(tn)))
+                for n in ORDER:
+                    print("| %s | %s |" % (n, " | ".join(g(change(C[t], n, masks(C[t])["turn"])[k][0]) if n in C[t]["cases"] else "-" for t in tn)))

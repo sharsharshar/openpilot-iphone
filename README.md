@@ -86,9 +86,10 @@ Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_m
 
 - `experiments/phone_errors/`: how much the driving outputs move under errors an iPhone would introduce,
   replayed on real footage: calibration and focal-length errors, one camera feeding both inputs, dropped or
-  out-of-sync frames, image quality. Yaw and pitch calibration matter most; almost nothing done to the wide
-  input matters on this clip. Also measures the model's noise floor: one grey level of input noise already moves
-  the plan by about a metre at 10 s.
+  out-of-sync frames, image quality. Yaw and pitch calibration matter most; lag or focal error on the
+  wide input does nothing. Also measures the model's noise floor: one grey level of input noise already moves
+  the plan by about a metre at 10 s. Repeated on five more clips, two with real turns: removing the wide input
+  costs 2 to 9 times the noise floor in curvature, about 30 times less than removing the narrow input.
 - `experiments/calibration/`: openpilot's own calibration estimator (a port of `calibrationd`) replayed on the six
   clips from zero and from wrong starting angles. It gets to within about 0.05 to 0.3 degrees of the device's
   logged calibration after 5 s of valid driving; one night clip does not recover from a negative yaw start.
