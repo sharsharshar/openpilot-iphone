@@ -9,5 +9,5 @@ t0 = time.time(); out = run_model(fr); print("model run %.1fs" % (time.time() - 
 d = np.abs(out - ref["outputs"]); print("outputs vs stored reference: max abs diff %g, mean %g" % (d.max(), d.mean()))
 out2 = run_model(fr); print("second run vs first: max abs diff %g" % np.abs(out2 - out).max())
 q = quantities(out); qr = quantities(ref["outputs"]); print("driving quantities identical:", all(np.array_equal(q[k], qr[k]) for k in q))
-dv = vs_device(q); print("yardstick (baseline vs device modelV2, warm):", {k: round(v, 5) for k, v in dv.items()})
+dv = vs_device(q); print("yardstick (baseline vs device modelV2, warm):", {k: (None if v is None else round(v, 5)) for k, v in dv.items()})
 np.save(f"{OUT}/baseline_outputs.npy", out)
