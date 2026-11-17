@@ -89,6 +89,9 @@ Per-stage timings (`build_ms`, `predict_ms`, `carry_ms`, `parse_ms`, and `warp_m
   out-of-sync frames, image quality. Yaw and pitch calibration matter most; almost nothing done to the wide
   input matters on this clip. Also measures the model's noise floor: one grey level of input noise already moves
   the plan by about a metre at 10 s.
+- `experiments/calibration/`: openpilot's own calibration estimator (a port of `calibrationd`) replayed on the six
+  clips from zero and from wrong starting angles. It gets to within about 0.05 to 0.3 degrees of the device's
+  logged calibration after 5 s of valid driving; one night clip does not recover from a negative yaw start.
 - `experiments/ane_variants/`: graph rewrites of the small model aimed at the Neural Engine, each checked against
   the reference. Speed is not measured anywhere yet.
 
